@@ -4,6 +4,8 @@ A native Quickshell bar plugin for NuPhy keyboards supported by `nuphyctl`.
 The title follows the connected keyboard’s reported product name; when the CLI
 cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
+![NuPhy lighting widget with Omarchy theme sync and RGB controls](screenshots/widget.png)
+
 - Independent backlight, side and decorative lighting controls.
 - All 20 main effects and all five side/decorative effects exposed by nuphyctl.
 - Custom `#RRGGBB`, brightness, animation speed and main-light direction.
