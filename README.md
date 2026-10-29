@@ -22,8 +22,16 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
 ## Install
 
-Requires Omarchy’s Quickshell-based shell, Python 3 and `nuphyctl` on PATH.
+Requires Omarchy’s Quickshell-based shell, Python 3 and
+[`nuphyctl`](https://github.com/fldc/nuphyctl) on PATH.
 The keyboard’s control interface must be accessible to your user.
+
+Install `nuphyctl` from the AUR using the
+[`nuphyctl-bin`](https://aur.archlinux.org/packages/nuphyctl-bin) package:
+
+```bash
+omarchy pkg aur add nuphyctl-bin
+```
 
 Install and enable the plugin directly from GitHub:
 
@@ -52,6 +60,25 @@ Run the symlink command from this project directory. Do not overwrite an existin
 plugin with the same ID. Layout changes hot-reload; if plugin code stays cached,
 run `omarchy restart shell`. The 0.2.0 update adds a service entry point and needs
 one shell restart when upgrading from 0.1.0.
+
+## Disable or remove
+
+Disable the plugin without uninstalling it:
+
+```bash
+omarchy plugin disable local.nuphy
+```
+
+Remove an installed plugin:
+
+```bash
+omarchy plugin remove local.nuphy
+```
+
+Disabling or removing stops the plugin's automatic sync; it does not restore
+previous keyboard colors. Saved preferences in
+`~/.local/state/omarchy-nuphy/` are retained. The plugin does not install udev
+rules, modify keymaps, or overwrite other application settings.
 
 ## Use
 
@@ -113,3 +140,8 @@ scrolls the popup instead of changing lighting values.
 
 English translations are in `i18n/en.json`;
 other Omarchy languages fall back to English.
+
+## License
+
+[MIT](LICENSE). The screenshot and marketplace preview are included under the
+same license.
