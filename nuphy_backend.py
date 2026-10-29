@@ -15,6 +15,7 @@ import time
 MAIN = 'ray stair static breath flower wave ripple spout galaxy rotation ripple2 point grid time rain ribbon gaming identify windmill diagonal'.split()
 SIDE = 'time neon static breathe rhythm'.split()
 ZONES = ('main', 'side', 'decorative')
+ACTIVE_ZONES = ('main', 'side')
 STATE = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state'))) / 'omarchy-nuphy'
 THEME = Path.home() / '.local/state/omarchy/current/theme/keyboard.rgb'
 RETRY_SECONDS = 30
@@ -197,12 +198,12 @@ def command(zone, config, color, device):
             '--iface', str(device['iface']), '--usage-page', str(device['page']), '--usage', str(device['usage'])]
     if zone == 'main':
         args += ['--direction', config['direction']]
-    if zone == 'decorative':
-        args += ['--base-offset', str(config['offset'])]
     return args
 
 
 def apply(state, zone, color, device, force=False):
+    if zone not in ACTIVE_ZONES:
+        raise ValueError('Lighting zone is disabled in this widget')
     if not device:
         raise ValueError('No unambiguous NuPhy control interface found; connect one keyboard')
     args = command(zone, state['zones'][zone], color, device)
@@ -226,6 +227,8 @@ def run(state, action, device=None, zone=None, payload=None):
         state['retryAfter'] = 0
     color = theme_color()
     if action == 'apply':
+        if zone not in ACTIVE_ZONES:
+            raise ValueError('Lighting zone is disabled in this widget')
         config = validate(zone, payload)
         if config['sync'] and not color:
             raise ValueError('Theme keyboard.rgb is missing or invalid')
@@ -235,7 +238,7 @@ def run(state, action, device=None, zone=None, payload=None):
         state['error'] = ''
         state['retryAfter'] = 0
     elif action in ('tick', 'sync'):
-        targets = [z for z in ZONES if state['zones'][z]['sync']]
+        targets = [z for z in ACTIVE_ZONES if state['zones'][z]['sync']]
         if action == 'sync' or time.time() >= state['retryAfter']:
             if targets and not color:
                 raise ValueError('Theme keyboard.rgb is missing or invalid')

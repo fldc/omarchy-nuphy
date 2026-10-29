@@ -74,7 +74,7 @@ class BackendTests(unittest.TestCase):
             run.assert_not_called()
 
     def test_all_writes_have_explicit_selectors(self):
-        for zone in b.ZONES:
+        for zone in b.ACTIVE_ZONES:
             with self.subTest(zone=zone), self.success() as run:
                 b.run(b.defaults(), 'apply', self.device, zone, {})
                 args = run.call_args.args[0]
@@ -87,6 +87,23 @@ class BackendTests(unittest.TestCase):
         with patch.object(b, 'device_identity', return_value='replaced'), self.success() as run:
             with self.assertRaisesRegex(RuntimeError, 'Keyboard changed'):
                 b.run(b.defaults(), 'apply', self.device, 'main', {})
+            run.assert_not_called()
+
+    def test_legacy_decorative_sync_never_writes(self):
+        state = b.defaults()
+        state['zones']['decorative']['sync'] = True
+        with self.success() as run:
+            b.run(state, 'tick', self.device)
+            b.run(state, 'sync', self.device)
+            run.assert_not_called()
+        self.assertTrue(state['zones']['decorative']['sync'])
+
+    def test_decorative_manual_writes_rejected(self):
+        with self.success() as run:
+            with self.assertRaisesRegex(ValueError, 'disabled'):
+                b.run(b.defaults(), 'apply', self.device, 'decorative', {})
+            with self.assertRaisesRegex(ValueError, 'disabled'):
+                b.apply(b.defaults(), 'decorative', '#123456', self.device)
             run.assert_not_called()
 
     def test_sync_deduplication_and_theme_change(self):
