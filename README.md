@@ -6,8 +6,8 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
 ![NuPhy lighting widget with Omarchy theme sync and RGB controls](screenshots/widget.png)
 
-- Independent backlight, side and decorative lighting controls.
-- All 20 main effects and all five side/decorative effects exposed by nuphyctl.
+- Independent backlight and side-light controls.
+- All 20 main effects and all five side-light effects exposed by nuphyctl.
 - Custom `#RRGGBB`, brightness, animation speed and main-light direction.
 - Per-zone automatic sync with `~/.local/state/omarchy/current/theme/keyboard.rgb`.
 - Theme sync preserves each zone’s chosen effect, brightness and speed.
@@ -57,6 +57,11 @@ one shell restart when upgrading from 0.1.0.
 
 Click the keyboard icon, select a lighting zone, edit its preferences and click
 **Apply lighting**. To sync a zone, check **Follow Omarchy theme** and Apply.
+Click the color square to open an inline color picker. Choose a hue, then use
+the color field to adjust saturation and value. Picking a color switches the
+selected zone to manual mode; no HID command is sent until you click Apply.
+You can also enter a `#RRGGBB` value directly. Escape closes the picker first.
+
 Sync is initially disabled for every zone: installing the widget never changes
 the keyboard on its own. Linux inotify watches the theme file, its symlink
 ancestors, and HID device-node changes. Events are coalesced for 200 milliseconds;
@@ -71,9 +76,9 @@ Apply saves a zone’s preferences
 even if the device is disconnected; enabled sync retries after 30 seconds.
 Manual (non-sync) writes can be retried with Apply.
 
-Decorative lighting is experimental in `nuphyctl`. Its offset defaults to 17;
-some layouts use 35. It is not written unless you explicitly Apply that zone or
-enable its sync. Consult your model/protocol documentation before changing it.
+Decorative lighting is disabled in this widget. Legacy decorative preferences
+are retained for compatibility but are excluded from automatic sync and manual
+writes. Only backlight and side-light commands can be sent.
 
 State lives in `$XDG_STATE_HOME/omarchy-nuphy/state.json` (normally
 `~/.local/state/omarchy-nuphy/state.json`). All bar instances use the same service;
@@ -103,7 +108,8 @@ Tests include mocked hardware, actual worker-process protocol/event tests with a
 fake CLI, and an offscreen Quickshell editor smoke test. They never send HID
 commands to your keyboard. The UI test requires installed Omarchy shell components
 and Quickshell; it skips when these are unavailable. Sliders support Tab focus
-and Left/Right arrow adjustment.
+and Left/Right arrow adjustment. Mouse-wheel and touchpad scrolling over sliders
+scrolls the popup instead of changing lighting values.
 
 English translations are in `i18n/en.json`;
 other Omarchy languages fall back to English.
