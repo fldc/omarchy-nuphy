@@ -24,7 +24,8 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
 Requires Omarchy’s Quickshell-based shell, Python 3 and
 [`nuphyctl`](https://github.com/fldc/nuphyctl) on PATH.
-The keyboard’s control interface must be accessible to your user.
+**Manual setup is required:** installing this plugin does not install its CLI
+dependency or grant access to the keyboard's HID control interface.
 
 Install `nuphyctl` from the AUR using the
 [`nuphyctl-bin`](https://aur.archlinux.org/packages/nuphyctl-bin) package:
@@ -32,6 +33,21 @@ Install `nuphyctl` from the AUR using the
 ```bash
 omarchy pkg aur add nuphyctl-bin
 ```
+
+The `nuphyctl-bin` package (reviewed version: `0.6.1-1`) installs a udev rule
+that grants the active local seat access to NuPhy hidraw devices. After installing
+or updating it, disconnect and reconnect the keyboard while logged into your
+local desktop session. Run Omarchy and `nuphyctl` as your normal user, not root.
+For source builds or other CLI installation methods, follow the
+[upstream device-permissions instructions](https://github.com/fldc/nuphyctl/blob/master/docs/setup.md#linux-device-permissions).
+
+The permission grants HID device access, not a lighting-only permission. Other
+programs running as your account may use that access too. This plugin invokes
+only device enumeration and validated lighting commands with explicit interface
+selectors; it never invokes keymap or raw-report commands. The plugin itself
+does not install udev rules, elevate privileges, or change device permissions.
+An empty capability list from an automated marketplace scan does **not** mean
+that the external CLI and device-permission setup are unnecessary.
 
 Install and enable the plugin directly from GitHub:
 

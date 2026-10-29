@@ -255,15 +255,22 @@ class Worker:
     def __init__(self):
         self.device = None
         self.discovery_error = ''
+        self.setup_issue = ''
         self.starting = True
 
     def discover(self):
         try:
             self.device = discover_device()
             self.discovery_error = ''
+            self.setup_issue = 'hid-permission' if self.device and not os.access(self.device['path'], os.R_OK | os.W_OK) else ''
+        except FileNotFoundError:
+            self.device = None
+            self.discovery_error = ''
+            self.setup_issue = 'cli-missing'
         except (OSError, subprocess.SubprocessError, ValueError, RuntimeError) as error:
             self.device = None
             self.discovery_error = str(error)[:600]
+            self.setup_issue = ''
 
     def execute(self, request):
         with state_lock():
@@ -280,4 +287,5 @@ class Worker:
                 state['retryAfter'] = time.time() + RETRY_SECONDS
             save_state(path, state)
         return {**state, 'theme': theme_color(), 'keyboardName': self.device['name'] if self.device else '',
-                'connected': self.device is not None, 'discoveryError': self.discovery_error}
+                'connected': self.device is not None, 'discoveryError': self.discovery_error,
+                'setupIssue': self.setup_issue}

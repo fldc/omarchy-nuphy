@@ -70,6 +70,12 @@ FloatingWindow {
         editor.selectZone("main")
         window.check(brightness.value === 55, "draft survives zone switch")
         var button = window.child(editor, "applyButton")
+        editor.snapshot = Object.assign({}, editor.snapshot, {setupIssue: "cli-missing"})
+        window.check(!button.enabled && window.child(editor, "setupNotice").visible, "missing CLI shows manual setup and blocks Apply")
+        editor.snapshot = Object.assign({}, editor.snapshot, {setupIssue: "hid-permission"})
+        window.check(!button.enabled && window.child(editor, "setupNotice").text.indexOf("HID") >= 0, "missing HID permission shows setup instructions")
+        editor.snapshot = Object.assign({}, editor.snapshot, {setupIssue: ""})
+        window.check(button.enabled, "Apply enabled after setup recovery")
         var idleText = button.text
         editor.snapshot = Object.assign({}, editor.snapshot, {theme: "#654321"})
         window.check(button.text === idleText && button.enabled, "background updates do not flicker button")

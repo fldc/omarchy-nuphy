@@ -148,6 +148,24 @@ class BackendTests(unittest.TestCase):
             worker.execute({'action': 'tick'})
             self.assertEqual(run.call_count, 2)
 
+    def test_missing_cli_has_explicit_setup_status(self):
+        worker = b.Worker()
+        with patch.object(b, 'discover_device', side_effect=FileNotFoundError()):
+            worker.discover()
+        self.assertIsNone(worker.device)
+        self.assertEqual(worker.setup_issue, 'cli-missing')
+        result = worker.execute({'action': 'status'})
+        self.assertEqual(result['setupIssue'], 'cli-missing')
+
+    def test_hid_permissions_have_explicit_setup_status(self):
+        worker = b.Worker()
+        with patch.object(b, 'discover_device', return_value=self.device), patch.object(b.os, 'access', return_value=False):
+            worker.discover()
+        self.assertEqual(worker.setup_issue, 'hid-permission')
+        with patch.object(b, 'discover_device', return_value=self.device), patch.object(b.os, 'access', return_value=True):
+            worker.discover()
+        self.assertEqual(worker.setup_issue, '')
+
     def test_failed_forced_write_invalidates_success(self):
         state = b.defaults()
         with self.success():

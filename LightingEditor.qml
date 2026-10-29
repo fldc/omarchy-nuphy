@@ -21,6 +21,7 @@ Controls.ScrollView {
   property var drafts: ({})
   property bool pickerOpen: false
   property bool pickerUpdating: false
+  readonly property bool setupBlocked: snapshot.setupIssue === "cli-missing" || snapshot.setupIssue === "hid-permission"
   readonly property bool validColor: /^#[0-9a-fA-F]{6}$/.test(hexInput.text)
   readonly property var activeZones: ["main", "side"]
   readonly property var mainEffects: ["ray", "stair", "static", "breath", "flower", "wave", "ripple", "spout", "galaxy", "rotation", "ripple2", "point", "grid", "time", "rain", "ribbon", "gaming", "identify", "windmill", "diagonal"]
@@ -123,6 +124,13 @@ Controls.ScrollView {
       font.pixelSize: Commons.Style.font.heading
     }
     PlainText { Layout.fillWidth: true; text: strings.t("theme").arg(root.snapshot.theme || strings.t("missing")) }
+    PlainText {
+      objectName: "setupNotice"
+      visible: root.setupBlocked
+      Layout.fillWidth: true
+      color: Commons.Color.urgent
+      text: root.snapshot.setupIssue === "cli-missing" ? strings.t("setupCli") : strings.t("setupHid")
+    }
     Rectangle {
       Layout.fillWidth: true
       implicitHeight: Commons.Style.space(5)
@@ -242,7 +250,7 @@ Controls.ScrollView {
       objectName: "applyButton"
       Layout.fillWidth: true
       text: strings.t(root.actionBusy ? "busy" : "apply")
-      enabled: root.ready && !root.actionBusy && (root.syncing || root.validColor)
+      enabled: root.ready && !root.setupBlocked && !root.actionBusy && (root.syncing || root.validColor)
       foreground: Commons.Color.popups.text
       focusable: true
       bordered: true
@@ -251,7 +259,7 @@ Controls.ScrollView {
     Ui.Button {
       Layout.fillWidth: true
       text: strings.t("syncNow")
-      enabled: root.ready && !root.actionBusy
+      enabled: root.ready && !root.setupBlocked && !root.actionBusy
       foreground: Commons.Color.popups.text
       focusable: true
       onClicked: root.syncRequested()

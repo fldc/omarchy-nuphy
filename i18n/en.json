@@ -4,6 +4,8 @@
   "side": "Side lights",
   "theme": "Theme color: %1",
   "missing": "Unavailable",
+  "setupCli": "Manual setup required: install nuphyctl with `omarchy pkg aur add nuphyctl-bin`, then restart the Omarchy shell. The plugin does not install this dependency automatically.",
+  "setupHid": "Manual setup required: your account cannot access the keyboard's HID interface. Install or update nuphyctl-bin for its udev rule, then reconnect the keyboard in an active local desktop session. Do not run the shell as root.",
   "sync": "Follow Omarchy theme",
   "syncNow": "Sync enabled zones now",
   "effect": "Effect",
