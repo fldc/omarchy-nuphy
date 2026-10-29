@@ -23,6 +23,23 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 Requires Omarchy’s Quickshell-based shell, Python 3 and `nuphyctl` on PATH.
 The keyboard’s control interface must be accessible to your user.
 
+Install and enable the plugin directly from GitHub:
+
+```bash
+omarchy plugin add https://github.com/fldc/omarchy-nuphy.git --enable
+```
+
+This installs the plugin and adds its keyboard icon to the bar. If you install
+without `--enable`, enable it later with:
+
+```bash
+omarchy plugin enable local.nuphy
+```
+
+### Local development install
+
+To load a local checkout instead of installing from GitHub:
+
 ```bash
 ln -s "$PWD" ~/.config/omarchy/plugins/local.nuphy
 omarchy plugin validate ~/.config/omarchy/plugins/local.nuphy
