@@ -103,10 +103,6 @@ Apply saves a zone’s preferences
 even if the device is disconnected; enabled sync retries after 30 seconds.
 Manual (non-sync) writes can be retried with Apply.
 
-Decorative lighting is disabled in this widget. Legacy decorative preferences
-are retained for compatibility but are excluded from automatic sync and manual
-writes. Only backlight and side-light commands can be sent.
-
 State lives in `$XDG_STATE_HOME/omarchy-nuphy/state.json` (normally
 `~/.local/state/omarchy-nuphy/state.json`). All bar instances use the same service;
 a singleton worker lock prevents competing writers. State lock acquisition times
