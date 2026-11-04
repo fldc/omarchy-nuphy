@@ -18,7 +18,9 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 - Device-specific sync cache, invalidated on reconnect and worker restart.
 - Lazy popup creation, per-zone editing drafts, and keyboard-adjustable sliders.
 - Atomic preferences with safe recovery and backups of damaged state.
-- Persistent preferences; no keymap access, network access or elevated privileges.
+- Visual Air75 V3 keymap editor, searchable assignments, and shared editing drafts.
+- Explicit keymap Apply with conflict checks, recovery backups, and readback.
+- Persistent lighting preferences; no network access or elevated privileges.
 
 ## Install
 
@@ -43,8 +45,9 @@ For source builds or other CLI installation methods, follow the
 
 The permission grants HID device access, not a lighting-only permission. Other
 programs running as your account may use that access too. This plugin invokes
-only device enumeration and validated lighting commands with explicit interface
-selectors; it never invokes keymap or raw-report commands. The plugin itself
+device enumeration, validated lighting commands, and keymap commands with explicit
+interface selectors. Keymap writes happen only through **Apply changes**; it never
+invokes raw-report commands. The plugin itself
 does not install udev rules, elevate privileges, or change device permissions.
 An empty capability list from an automated marketplace scan does **not** mean
 that the external CLI and device-permission setup are unnecessary.
@@ -94,11 +97,12 @@ omarchy plugin remove local.nuphy
 Disabling or removing stops the plugin's automatic sync; it does not restore
 previous keyboard colors. Saved preferences in
 `~/.local/state/omarchy-nuphy/` are retained. The plugin does not install udev
-rules, modify keymaps, or overwrite other application settings.
+rules or overwrite other application settings. Applied keymaps remain on the
+keyboard after the plugin is removed.
 
 ## Use
 
-Click the keyboard icon, select a lighting zone, edit its preferences and click
+Click the keyboard icon, open **Lighting**, select a lighting zone, edit its preferences and click
 **Apply lighting**. To sync a zone, check **Follow Omarchy theme** and Apply.
 Click the color square to open an inline color picker. Choose a hue, then use
 the color field to adjust saturation and value. Picking a color switches the
@@ -139,6 +143,68 @@ Open from a keybinding or terminal:
 omarchy-shell nuphy toggle
 ```
 
+### Keymap editing
+
+Open **Keymap**, then choose a mode, layer, and physical key. The mode selector
+chooses which mappings to edit; it does not change the keyboard’s hardware mode.
+Layer labels follow NuPhyIO: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
+Select **Choose assignment** to search keycodes by name, alias, group, or description.
+Momentary layer assignments appear as `MO(n)`, using absolute layer numbers.
+**Use factory assignment** stages the factory value for the selected key;
+**Revert edit** removes its pending change.
+
+The Air75 V3 uses a physical ANSI diagram and separate knob rotation buttons.
+Other devices show a **Matrix view** using the firmware's rows and columns,
+with extra entries listed separately. Its equal-sized cells are a schematic;
+firmware coordinates may differ from physical key positions. Large matrices
+scroll horizontally to keep cells readable. Zero and transparent assignments
+remain selectable. The position selector remains available below the view;
+narrow Air75 popups use that selector.
+
+For unsupported layouts, **Request or correct a keyboard layout** opens a prefilled GitHub issue draft
+with the model, firmware, matrix dimensions, extra-entry count and layer count.
+Add a top-down photo or NuPhyIO screenshot and layout details before submitting.
+Serial numbers, HID paths and keymap contents are excluded. Opening the link
+does not submit the issue. The [keyboard layout issue template](.github/ISSUE_TEMPLATE/keyboard-layout.md)
+can also be used directly from GitHub’s New issue page once it is merged into
+the default branch.
+
+Named positions use
+the CLI’s Windows legends even while editing Mac mode. Diagram keys show current
+or pending assignments; hover a key for its physical position and full assignment. `•` marks an unapplied
+edit; `*` on the diagram marks an assignment changed from factory. Unknown
+keycodes retain their numeric values.
+
+**Apply changes** writes all pending changes across modes and layers. Opening,
+refreshing, selecting keys, and editing never write mappings. Drafts are shared
+across monitors and survive popup closes until explicitly discarded. A shell restart clears in-memory drafts. Disconnecting
+blocks writes until a successful refresh. Reconnecting an identified keyboard
+reconciles the draft; an uncertain identity keeps it detached until you choose
+**Review draft for this keyboard**. Incompatible layouts cannot accept that draft.
+Generic vendor serial strings (including `NuPhy Keybord 0720`) are not treated as
+unique device identification. Keymap errors never automatically retry.
+
+Before applying, the worker reads the keyboard again, saves a binary recovery
+backup under `$XDG_STATE_HOME/omarchy-nuphy/keymap-backups/`, and checks edited
+keys for external changes. Conflicts stop the entire write. Each conflicting key
+shows its current keyboard assignment alongside the original and proposed values. **Keep keyboard assignment**
+removes the edit; **Keep my edit** acknowledges the current value as its new
+baseline. Both choices only update the draft. Apply rechecks for new conflicts.
+Changes to unrelated keys are preserved. Another application can still write
+between this check and the CLI operation; the CLI has no conditional-write API.
+
+The CLI also creates its own backup and verifies its writes. The widget reads
+back after success or failure, retaining unresolved edits. If readback fails,
+refresh is required before retrying. The backup path is shown after an apply
+attempt. For manual recovery, use `nuphyctl keymap restore-backup <backup-file>`
+with selectors for the intended keyboard; review `--help` and `--dry-run` first.
+A complete backup restore can replace unrelated edits made since that backup.
+
+Keymap editing requires CLI support for `info`, `dump`, `keycodes`, and `apply`
+with `--json`, plus `dump --defaults` and `dump --raw-out`. An older CLI reports
+its command error in the editor; lighting remains available. No automatic profile
+restore, whole-mode reset, or macro editor is included.
+
 ## Development
 
 ```bash
@@ -147,7 +213,8 @@ omarchy plugin validate .
 ```
 
 Tests include mocked hardware, actual worker-process protocol/event tests with a
-fake CLI, and an offscreen Quickshell editor smoke test. They never send HID
+stateful fake CLI, partial-write recovery, shared QML service/editor behavior, and
+offscreen Quickshell interaction tests. They never send HID
 commands to your keyboard. The UI test requires installed Omarchy shell components
 and Quickshell; it skips when these are unavailable. Sliders support Tab focus
 and Left/Right arrow adjustment. Mouse-wheel and touchpad scrolling over sliders
@@ -155,6 +222,10 @@ scrolls the popup instead of changing lighting values.
 
 English translations are in `i18n/en.json`;
 other Omarchy languages fall back to English.
+
+Release validation and remaining manual checks are recorded in
+[docs/validation-0.3.0.md](docs/validation-0.3.0.md). Future work is in
+[ROADMAP.md](ROADMAP.md).
 
 ## License
 

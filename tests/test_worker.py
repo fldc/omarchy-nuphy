@@ -79,6 +79,14 @@ class WorkerIntegrationTests(unittest.TestCase):
         self.assertIn('NuPhy control interface', result['error'])
         self.assertTrue(all(line == 'list' for line in self.log.read_text().splitlines()))
 
+    def test_keymap_without_device_is_read_only_and_worker_survives(self):
+        result = self.request({'action': 'keymap-load', 'id': 42})
+        self.assertFalse(result['keymap']['known'])
+        self.assertIn('Connect', result['keymap']['error'])
+        self.assertIn('zones', result)
+        self.assertTrue(all(line == 'list' for line in self.log.read_text().splitlines()))
+        self.assertIn('zones', self.request({'action': 'status', 'id': 43}))
+
     def test_second_worker_cannot_start(self):
         other = subprocess.run([sys.executable, str(self.script)], env=self.env, input='',
             capture_output=True, text=True, timeout=5)
