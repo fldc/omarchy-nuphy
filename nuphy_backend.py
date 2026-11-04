@@ -24,7 +24,7 @@ MAX_JSON = 65536
 
 def defaults():
     return {'zones': {z: {'effect': 'static', 'hex': '#ffffff', 'brightness': 70,
-                        'speed': 2, 'direction': 'right', 'sync': False,
+                        'speed': 2, 'direction': 'right', 'sync': False, 'customColor': True,
                         'offset': 17} for z in ZONES},
             'applied': {}, 'deviceIdentity': '', 'error': '', 'retryAfter': 0, 'message': ''}
 
@@ -44,8 +44,9 @@ def validate(zone, values):
     for key, maximum in [('brightness', 100), ('speed', 4), ('offset', 53)]:
         if type(result[key]) is not int or not 0 <= result[key] <= maximum:
             raise ValueError(f'Invalid {key}')
-    if type(result['sync']) is not bool or result['direction'] not in ('left', 'right'):
-        raise ValueError('Invalid sync or direction')
+    if (type(result['sync']) is not bool or type(result['customColor']) is not bool
+            or result['direction'] not in ('left', 'right')):
+        raise ValueError('Invalid sync, custom color or direction')
     return result
 
 
@@ -198,6 +199,8 @@ def command(zone, config, color, device):
             '--iface', str(device['iface']), '--usage-page', str(device['page']), '--usage', str(device['usage'])]
     if zone == 'main':
         args += ['--direction', config['direction']]
+    if not config['sync'] and not config['customColor']:
+        args += ['--color-mode', 'preset', '--palette-index', '0']
     return args
 
 

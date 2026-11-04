@@ -8,7 +8,7 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
 - Independent backlight and side-light controls.
 - All 20 main effects and all five side-light effects exposed by nuphyctl.
-- Custom `#RRGGBB`, brightness, animation speed and main-light direction.
+- Custom `#RRGGBB` or default effect colors, brightness, animation speed and main-light direction.
 - Per-zone automatic sync with `~/.local/state/omarchy/current/theme/keyboard.rgb`.
 - Theme sync preserves each zone’s chosen effect, brightness and speed.
 - Verified NuPhy targets with explicit HID interface selectors on every write.
@@ -104,6 +104,9 @@ Click the color square to open an inline color picker. Choose a hue, then use
 the color field to adjust saturation and value. Picking a color switches the
 selected zone to manual mode; no HID command is sent until you click Apply.
 You can also enter a `#RRGGBB` value directly. Escape closes the picker first.
+With theme sync off, disable **Use custom color** to use the effect’s default
+palette colors, then Apply. Your custom color is kept for when you enable it
+again. This choice is saved separately for each zone.
 
 Sync is initially disabled for every zone: installing the widget never changes
 the keyboard on its own. Linux inotify watches the theme file, its symlink

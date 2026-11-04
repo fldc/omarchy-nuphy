@@ -14,6 +14,7 @@ Controls.ScrollView {
   property string zone: "main"
   property string effect: "static"
   property bool syncing: false
+  property bool customColor: true
   property string direction: "right"
   property string localError: ""
   property bool initialized: false
@@ -46,14 +47,15 @@ Controls.ScrollView {
 
   function config() {
     var savedHex = snapshot.zones ? snapshot.zones[zone].hex : "#ffffff"
-    return {effect: effect, hex: syncing && !validColor ? savedHex : hexInput.text, brightness: Math.round(brightness.value),
-      speed: Math.round(speed.value), direction: direction, sync: syncing}
+    return {effect: effect, hex: (syncing || !customColor) && !validColor ? savedHex : hexInput.text, brightness: Math.round(brightness.value),
+      speed: Math.round(speed.value), direction: direction, sync: syncing, customColor: customColor}
   }
   function loadZone() {
     var value = drafts[zone] || (snapshot.zones ? snapshot.zones[zone] : null)
     if (!value) return
     effect = value.effect
     syncing = value.sync
+    customColor = value.customColor !== false
     direction = value.direction
     hexInput.text = value.hex
     brightness.value = value.brightness
@@ -68,10 +70,11 @@ Controls.ScrollView {
     pickerOpen = false
     loadZone()
   }
-  function toggleColorPicker() { pickerOpen = !pickerOpen }
+  function toggleColorPicker() { if (syncing || customColor) pickerOpen = !pickerOpen }
   function chooseColor(hex) {
     pickerUpdating = true
     syncing = false
+    customColor = true
     hexInput.text = hex
     localError = ""
     pickerUpdating = false
@@ -80,7 +83,7 @@ Controls.ScrollView {
     if (colorPicker.item) colorPicker.item.setColor(syncing ? (snapshot.theme || "#ffffff") : (validColor ? hexInput.text : "#ffffff"))
   }
   function apply() {
-    if (!syncing && !validColor) { localError = strings.t("invalid"); return }
+    if (!syncing && customColor && !validColor) { localError = strings.t("invalid"); return }
     localError = ""
     drafts[zone] = config()
     applyRequested(zone, config())
@@ -92,6 +95,9 @@ Controls.ScrollView {
   }
   onSyncingChanged: {
     if (syncing) pickerOpen = false
+  }
+  onCustomColorChanged: {
+    if (!customColor) pickerOpen = false
   }
 
   Controls.ScrollBar.horizontal.policy: Controls.ScrollBar.AlwaysOff
@@ -157,18 +163,34 @@ Controls.ScrollView {
       options: root.zone === "main" ? root.mainEffects : root.sideEffects
       onChanged: function(value) { root.effect = value }
     }
-    PlainText { text: strings.t("color") }
+    Ui.Toggle {
+      objectName: "customColorToggle"
+      visible: !root.syncing
+      Layout.fillWidth: true
+      label: strings.t("customColor")
+      checked: root.customColor
+      foreground: Commons.Color.popups.text
+      onClicked: root.customColor = !root.customColor
+    }
+    PlainText {
+      visible: !root.syncing && !root.customColor
+      Layout.fillWidth: true
+      text: strings.t("defaultColors")
+    }
+    PlainText { text: strings.t("color"); opacity: root.syncing || root.customColor ? 1 : 0.5 }
     RowLayout {
       Layout.fillWidth: true
+      opacity: root.syncing || root.customColor ? 1 : 0.5
       Rectangle {
         id: colorSquare
         objectName: "colorSquare"
+        enabled: root.syncing || root.customColor
         implicitWidth: Commons.Style.space(28); implicitHeight: Commons.Style.space(28)
         radius: Commons.Style.space(4)
         color: root.syncing ? (root.snapshot.theme || "transparent") : (root.validColor ? hexInput.text : "transparent")
         border.color: Commons.Color.popups.border
         border.width: activeFocus ? Math.max(2, Commons.Style.space(2)) : 1
-        activeFocusOnTab: true
+        activeFocusOnTab: enabled
         Accessible.role: Accessible.Button
         Accessible.name: strings.t("picker")
         Keys.onReturnPressed: root.toggleColorPicker()
@@ -185,7 +207,7 @@ Controls.ScrollView {
         Layout.fillWidth: true
         text: "#ffffff"
         maximumLength: 7
-        enabled: !root.syncing
+        enabled: !root.syncing && root.customColor
         foreground: Commons.Color.popups.text
         selectByMouse: true
         placeholderText: "#RRGGBB"
@@ -250,7 +272,7 @@ Controls.ScrollView {
       objectName: "applyButton"
       Layout.fillWidth: true
       text: strings.t(root.actionBusy ? "busy" : "apply")
-      enabled: root.ready && !root.setupBlocked && !root.actionBusy && (root.syncing || root.validColor)
+      enabled: root.ready && !root.setupBlocked && !root.actionBusy && (root.syncing || !root.customColor || root.validColor)
       foreground: Commons.Color.popups.text
       focusable: true
       bordered: true

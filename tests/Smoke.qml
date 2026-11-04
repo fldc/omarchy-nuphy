@@ -10,6 +10,7 @@ FloatingWindow {
   visible: true
   property int appliedCount: 0
   property string appliedZone: ""
+  property var appliedConfig: ({})
   TestEvent { id: events }
   Plugin.LightingEditor {
     id: editor
@@ -21,7 +22,7 @@ FloatingWindow {
       side: {effect: "neon", hex: "#abcdef", brightness: 40, speed: 1, direction: "right", sync: false, offset: 17},
       decorative: {effect: "static", hex: "#ffffff", brightness: 30, speed: 3, direction: "right", sync: false, offset: 35}
     }})
-    onApplyRequested: function(zone, config) { window.appliedCount++; window.appliedZone = zone }
+    onApplyRequested: function(zone, config) { window.appliedCount++; window.appliedZone = zone; window.appliedConfig = config }
   }
 
   function child(item, name) {
@@ -110,10 +111,31 @@ FloatingWindow {
         window.check(input.text === "#000000", "saturation/value selection supports black")
         input.text = "#112233"
         window.check(picker.selectedColor.toString() === "#112233", "hex edits update picker")
+        var customToggle = window.child(editor, "customColorToggle")
+        window.check(customToggle.visible && customToggle.checked, "manual mode offers custom color toggle")
+        customToggle.clicked()
+        window.check(!editor.customColor && !editor.pickerOpen && !input.enabled, "disabling custom color closes picker and disables input")
+        window.check(!window.child(editor, "colorSquare").enabled, "default colors disable color picker")
+        editor.toggleColorPicker()
+        window.check(!editor.pickerOpen, "default colors cannot open picker")
+        editor.selectZone("side")
+        window.check(editor.customColor, "zones have independent custom color choices")
+        editor.selectZone("main")
+        window.check(!editor.customColor && input.text === "#112233", "default mode and custom color survive zone switches")
+        input.text = "#nope"
+        window.check(button.enabled, "default colors can apply with incomplete custom input")
+        editor.apply()
+        window.check(window.appliedCount === 3 && !window.appliedConfig.customColor && !window.appliedConfig.sync,
+          "default mode is sent with Apply")
+        window.check(window.appliedConfig.hex === "#123456", "default mode supplies valid saved hex")
+        input.text = "#112233"
         editor.syncing = true
+        window.check(!customToggle.visible, "theme sync hides custom color toggle")
         window.check(!editor.pickerOpen, "enabling theme sync closes picker")
         editor.toggleColorPicker()
         picker = pickerLoader.item
+        picker.selectHue(0)
+        window.check(editor.customColor && !editor.syncing, "choosing a theme color enables custom mode")
         picker.closed()
         window.check(!editor.pickerOpen, "Done closes picker")
         editor.toggleColorPicker()

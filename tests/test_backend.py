@@ -83,6 +83,38 @@ class BackendTests(unittest.TestCase):
                     self.assertIn(flag, args)
                 self.assertEqual(args[args.index('--path') + 1], '/dev/hidraw3')
 
+    def test_color_modes_and_theme_sync_precedence(self):
+        for zone in b.ACTIVE_ZONES:
+            state = b.defaults()
+            with self.subTest(zone=zone), self.success() as run:
+                b.run(state, 'apply', self.device, zone, {'customColor': False, 'hex': '#abcdef'})
+                args = run.call_args.args[0]
+                self.assertEqual(args[args.index('--color-mode') + 1], 'preset')
+                self.assertEqual(args[args.index('--palette-index') + 1], '0')
+                self.assertEqual(state['zones'][zone]['hex'], '#abcdef')
+                b.run(state, 'apply', self.device, zone, {'customColor': True, 'hex': '#abcdef'})
+                self.assertNotIn('--color-mode', run.call_args.args[0])
+                self.assertIn('#abcdef', run.call_args.args[0])
+                b.run(state, 'apply', self.device, zone, {'sync': True, 'customColor': False})
+                self.assertNotIn('--color-mode', run.call_args.args[0])
+                self.assertIn('#123456', run.call_args.args[0])
+                b.THEME.write_text('#654321')
+                b.run(state, 'tick', self.device)
+                self.assertNotIn('--color-mode', run.call_args.args[0])
+                self.assertIn('#654321', run.call_args.args[0])
+                b.THEME.write_text('#123456')
+
+    def test_custom_color_preference_persistence_and_legacy_default(self):
+        path = self.state_dir / 'state.json'
+        state = b.defaults()
+        del state['zones']['main']['customColor']
+        state['zones']['side']['customColor'] = False
+        b.save_state(path, state)
+        restored = b.load_state(path)
+        self.assertTrue(restored['zones']['main']['customColor'])
+        self.assertFalse(restored['zones']['side']['customColor'])
+        self.assertFalse(restored['error'])
+
     def test_identity_rechecked_before_write(self):
         with patch.object(b, 'device_identity', return_value='replaced'), self.success() as run:
             with self.assertRaisesRegex(RuntimeError, 'Keyboard changed'):
@@ -177,7 +209,8 @@ class BackendTests(unittest.TestCase):
 
     def test_invalid_preferences_never_write(self):
         for key, value in [('hex', '#123456; reboot'), ('brightness', 101), ('brightness', True),
-                           ('speed', -1), ('effect', 'bad'), ('offset', 100), ('sync', 'yes'), ('direction', 'up')]:
+                           ('speed', -1), ('effect', 'bad'), ('offset', 100), ('sync', 'yes'),
+                           ('customColor', 'yes'), ('customColor', 0), ('direction', 'up')]:
             with self.subTest(key=key), self.success() as run:
                 with self.assertRaises(ValueError):
                     b.run(b.defaults(), 'apply', self.device, 'main', {key: value})
