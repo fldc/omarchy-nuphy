@@ -147,6 +147,7 @@ omarchy-shell nuphy toggle
 
 Open **Keymap**, then choose a mode, layer, and physical key. The mode selector
 chooses which mappings to edit; it does not change the keyboard’s hardware mode.
+Layer labels follow NuPhyIO: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
 Select **Choose assignment** to search keycodes by name, alias, group, or description.
 Momentary layer assignments appear as `MO(n)`, using absolute layer numbers.
 **Use factory assignment** stages the factory value for the selected key;

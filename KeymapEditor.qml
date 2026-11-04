@@ -73,7 +73,8 @@ ColumnLayout {
       value: String(root.selectedLayer)
       options: Array.from({length: root.info.layers_per_mode || 0}, function(_, i) {
         var mode = Math.floor(root.selectedLayer / root.info.layers_per_mode)
-        return {value: String(mode * root.info.layers_per_mode + i), label: ["Base", "Fn", "Fn2", "Fn3"][i] || String(i)}
+        var layer = mode * root.info.layers_per_mode + i
+        return {value: String(layer), label: "FN" + layer}
       })
       onChanged: function(value) { root.selectedLayer = Number(value); root.pickerOpen = false }
     }
