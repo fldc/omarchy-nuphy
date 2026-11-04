@@ -36,6 +36,7 @@ ColumnLayout {
         model: root.filtered
         delegate: Ui.Button {
           required property var modelData
+          objectName: "keycode-" + modelData.value
           Layout.fillWidth: true
           text: modelData.name + " · " + modelData.group
           foreground: Commons.Color.popups.text; focusable: true

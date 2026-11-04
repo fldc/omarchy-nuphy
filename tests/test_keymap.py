@@ -59,6 +59,8 @@ class KeymapTests(unittest.TestCase):
         with patch.object(km, 'cli', self.cli):
             state = self.map.execute('keymap-apply', self.device, self.payload)
         self.assertIn('externally', state['error'])
+        self.assertTrue(state['known'])
+        self.assertEqual(state['conflicts'][0]['current'], 8)
         self.assertEqual(len(self.calls), 1)
 
     def test_matching_assignment_is_noop(self):

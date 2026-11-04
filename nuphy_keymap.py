@@ -9,6 +9,14 @@ import nuphy_backend as backend
 LIMIT = 4 * 1024 * 1024
 
 
+class CommandError(RuntimeError):
+    def __init__(self, message):
+        super().__init__(message)
+        lowered = message.lower()
+        self.kind = 'unsupported' if any(word in lowered for word in ('unrecognized subcommand', 'unknown subcommand', 'unexpected argument', 'unrecognized option')) else 'read'
+
+
+
 def integer(value, maximum):
     if type(value) is not int or not 0 <= value <= maximum:
         raise ValueError('Invalid keymap integer')
@@ -31,7 +39,7 @@ def cli(args, device=None):
         err.seek(0)
         diagnostic = err.read(4096).decode(errors='replace')
     if result.returncode:
-        raise RuntimeError(diagnostic.strip()[:600] or 'nuphyctl keymap failed')
+        raise CommandError(diagnostic.strip()[:600] or 'nuphyctl keymap failed')
     if len(raw) > LIMIT:
         raise ValueError('Keymap response too large')
     value = json.loads(raw)
@@ -123,7 +131,11 @@ class Keymap:
         if self.codes is None:
             self.codes = catalog(cli(['keycodes']))
         last_backup = self.state.get('backup', '') if self.state.get('identity') == device['identity'] else ''
-        self.state = {'identity': device['identity'], 'info': info, 'keys': current,
+        serial = device.get('serial', '').strip()
+        stable = json.dumps([device.get('vid'), device.get('pid'), serial]) if serial and serial not in ('0', '00000000') and not serial.casefold().startswith(('nuphy keybord', 'nuphy keyboard')) else ''
+        signature = json.dumps([info['product'], info['matrix'], info['extra_entries'], info['layer_count'], info['layers_per_mode']], sort_keys=True)
+        self.state = {'identity': device['identity'], 'stableIdentity': stable, 'signature': signature,
+                      'conflicts': [], 'errorKind': '', 'message': '', 'info': info, 'keys': current,
                       'factory': factory, 'codes': self.codes, 'known': True, 'error': '', 'backup': last_backup}
         return self.state
 
@@ -158,8 +170,11 @@ class Keymap:
             raise ValueError('Incomplete recovery backup; nothing was written')
         self.state['keys'] = current
         conflicts = [c for c in changes if current[f'{c["layer"]}:{c["index"]}']['value'] not in (c['original'], c['value'])]
+        self.state['conflicts'] = [{**c, 'identity': device['identity'],
+                                    'current': current[f'{c["layer"]}:{c["index"]}']['value']} for c in conflicts]
         if conflicts:
-            raise ValueError('Assignments changed externally; refresh and review the draft before applying')
+            self.state.update(error='Assignments changed externally; resolve the conflicting keys', errorKind='conflict', known=True, message='')
+            return self.state
         pending = [c for c in changes if current[f'{c["layer"]}:{c["index"]}']['value'] != c['value']]
         self.state['known'] = False
         try:
@@ -170,16 +185,18 @@ class Keymap:
                     result = cli(['apply', config.name], device)
                     if result.get('verified') is not True and result.get('changes') != []:
                         raise RuntimeError('Keymap write was not verified')
-            self.state['error'] = ''
+            self.state.update(error='', errorKind='', message='applied' if pending else 'unchanged')
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-            self.state['error'] = str(error)[:600]
+            self.state.update(error=str(error)[:600], errorKind='write', message='')
         finally:
             try:
                 self.state['keys'] = mappings(cli(['dump'], device), geometry)
                 self.state['known'] = True
                 if any(self.state['keys'][f'{c["layer"]}:{c["index"]}']['value'] != c['value'] for c in changes):
                     self.state['error'] = self.state['error'] or 'Readback differs from requested assignments'
+                    self.state.update(errorKind='write', message='')
             except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+                self.state.update(errorKind='unknown', message='')
                 self.state['error'] = (self.state['error'] + '\nReadback failed: ' + str(error))[:600]
         return self.state
 
@@ -189,5 +206,6 @@ class Keymap:
                 return self.load(device)
             return self.apply(device, payload or {})
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-            self.state = {**self.state, 'error': str(error)[:600], 'known': False}
+            self.state = {**self.state, 'error': str(error)[:600], 'known': False, 'message': '',
+                          'errorKind': 'unavailable' if not device else getattr(error, 'kind', 'read')}
             return self.state

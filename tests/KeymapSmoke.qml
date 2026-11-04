@@ -11,6 +11,9 @@ FloatingWindow {
     property bool actionBusy: false
     property string lastError: ""
     property bool keymapCurrent: true
+    property bool detachedDraft: false
+    property bool canApplyKeymap: false
+    property var conflicts: ({})
     property var drafts: ({})
     property var changes: Object.keys(drafts).map(function(k) { return drafts[k] })
     property var keymap: ({identity: "test", known: true, keys: {"0:0": {layer: 0, index: 0, position: "ESC", name: "ESC", value: 41}}, factory: {"0:0": {name: "ESC", value: 41}}, codes: [{name: "A", value: 4, group: "basic", aliases: "", description: ""}], info: {product: "NuPhy Air75 V3", matrix: {rows: 6, cols: 16}, extra_entries: 2, layer_count: 8, layers_per_mode: 4, modes: [{mode: 0, name: "mac"}, {mode: 1, name: "windows"}], current_mode: {mode: 0}}})
@@ -44,7 +47,24 @@ FloatingWindow {
         realService.stage(0, 0, 5)
         if (realService.changes[0].value !== 4) throw new Error("Disconnected edit accepted")
         realService.receiveKeymap(Object.assign({}, service.keymap, {identity: "other"}))
-        if (realService.changes.length) throw new Error("Draft transferred to another device")
+        if (realService.changes.length !== 1 || !realService.detachedDraft) throw new Error("Detached draft lost")
+        realService.discard()
+        realService.snapshot = {zones: {}, connected: true, deviceIdentity: "test"}
+        realService.receiveKeymap(Object.assign({}, service.keymap, {signature: "layout", stableIdentity: "serial1"}))
+        realService.stage(0, 0, 4)
+        var modified = Object.assign({}, realService.keymap, {keys: {"0:0": {layer: 0, index: 0, value: 5}}})
+        realService.receiveKeymap(modified)
+        if (!realService.conflicts["0:0"] || realService.canApplyKeymap) throw new Error("Conflict not blocked")
+        realService.resolve("0:0", true)
+        if (realService.changes[0].original !== 5 || !realService.canApplyKeymap) throw new Error("Conflict acknowledgement failed")
+        realService.snapshot = {zones: {}, connected: true, deviceIdentity: "reconnected"}
+        realService.receiveKeymap(Object.assign({}, modified, {identity: "reconnected"}))
+        if (realService.detachedDraft || realService.changes.length !== 1) throw new Error("Identified reconnect lost draft")
+        realService.snapshot = {zones: {}, connected: true, deviceIdentity: "unknown"}
+        realService.receiveKeymap(Object.assign({}, modified, {identity: "unknown", stableIdentity: ""}))
+        if (!realService.detachedDraft) throw new Error("Unknown keyboard auto-attached")
+        realService.bindDraft()
+        if (realService.detachedDraft) throw new Error("Explicit draft binding failed")
         editor.width = 360
         console.log("NuPhy keymap smoke passed")
         Qt.quit()
