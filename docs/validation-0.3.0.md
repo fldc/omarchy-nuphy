@@ -2,7 +2,7 @@
 
 This record describes the feature branch, before merge or release publication.
 
-Automated result: **53 tests passed**, plugin validation passed, and Git whitespace
+Automated result: **54 tests passed**, plugin validation passed, and Git whitespace
 checks passed.
 
 ## Completed
@@ -24,6 +24,20 @@ checks passed.
 - Wide (760 logical pixels), narrow (360), and 1.5x scale editor renders using
   live keyboard readings were inspected. A clipped action row was found and
   changed to a responsive grid. Current-mode initialization was also corrected.
+
+## Layout follow-up
+
+- The Air75 diagram now follows the supplied NuPhyIO reference's contiguous
+  16-unit rows and right Shift width. It previews actual/pending assignments,
+  distinguishes the knob press, and exposes full positions in tooltips.
+- Unknown layouts use firmware matrix coordinates with separate extra entries,
+  horizontal scrolling at narrow widths, and the position selector below.
+  Matrix rendering was inspected at wide, narrow and 1.5x scale with a simulated
+  unrecognized model. A width binding loop found in rendering was corrected.
+- Matrix tests cover row/index mapping, zero-valued keys, pending labels, layer
+  switches, selecting a horizontally scrolled column and extra entries.
+- The layout-request URL is tested for encoding and its metadata allowlist. It
+  opens a GitHub draft; tests do not open a browser or submit an issue.
 
 ## Hardware command acceptance
 
@@ -56,7 +70,7 @@ or knob behavior: those require a person interacting with the keyboard.
 - Compare the physical diagram's stagger and labels with the board. CLI indices
   are used for assignments; physical dimensions remain a visual approximation.
 - Check an RTL desktop and a second layout/device if available. Unsupported
-  physical layouts use the position selector.
+  physical layouts now use the schematic matrix view plus the position selector.
 - Capture final themed screenshots, review the branch, and prepare release notes
   and PR. Merge, tagging, and publication have not been performed.
 

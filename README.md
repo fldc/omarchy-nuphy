@@ -154,8 +154,24 @@ Momentary layer assignments appear as `MO(n)`, using absolute layer numbers.
 **Revert edit** removes its pending change.
 
 The Air75 V3 uses a physical ANSI diagram and separate knob rotation buttons.
-Other devices, and narrow popups, use the position selector. Named positions use
-the CLI’s Windows legends even while editing Mac mode. `•` marks an unapplied
+Other devices show a **Matrix view** using the firmware's rows and columns,
+with extra entries listed separately. Its equal-sized cells are a schematic;
+firmware coordinates may differ from physical key positions. Large matrices
+scroll horizontally to keep cells readable. Zero and transparent assignments
+remain selectable. The position selector remains available below the view;
+narrow Air75 popups use that selector.
+
+For unsupported layouts, **Request or correct a keyboard layout** opens a prefilled GitHub issue draft
+with the model, firmware, matrix dimensions, extra-entry count and layer count.
+Add a top-down photo or NuPhyIO screenshot and layout details before submitting.
+Serial numbers, HID paths and keymap contents are excluded. Opening the link
+does not submit the issue. The [keyboard layout issue template](.github/ISSUE_TEMPLATE/keyboard-layout.md)
+can also be used directly from GitHub’s New issue page once it is merged into
+the default branch.
+
+Named positions use
+the CLI’s Windows legends even while editing Mac mode. Diagram keys show current
+or pending assignments; hover a key for its physical position and full assignment. `•` marks an unapplied
 edit; `*` on the diagram marks an assignment changed from factory. Unknown
 keycodes retain their numeric values.
 
