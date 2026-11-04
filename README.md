@@ -160,14 +160,19 @@ keycodes retain their numeric values.
 
 **Apply changes** writes all pending changes across modes and layers. Opening,
 refreshing, selecting keys, and editing never write mappings. Drafts are shared
-across monitors and survive popup closes, but are cleared on shell restart or
-when a newly loaded device has a different connection identity. Disconnecting
-blocks writes until a successful refresh. Keymap errors never automatically retry.
+across monitors and survive popup closes until explicitly discarded. A shell restart clears in-memory drafts. Disconnecting
+blocks writes until a successful refresh. Reconnecting an identified keyboard
+reconciles the draft; an uncertain identity keeps it detached until you choose
+**Review draft for this keyboard**. Incompatible layouts cannot accept that draft.
+Generic vendor serial strings (including `NuPhy Keybord 0720`) are not treated as
+unique device identification. Keymap errors never automatically retry.
 
 Before applying, the worker reads the keyboard again, saves a binary recovery
 backup under `$XDG_STATE_HOME/omarchy-nuphy/keymap-backups/`, and checks edited
-keys for external changes. Conflicts stop the write: refresh, review the current
-assignment, and choose the intended replacement again, or discard the draft.
+keys for external changes. Conflicts stop the entire write. Each conflicting key
+shows its current keyboard assignment alongside the original and proposed values. **Keep keyboard assignment**
+removes the edit; **Keep my edit** acknowledges the current value as its new
+baseline. Both choices only update the draft. Apply rechecks for new conflicts.
 Changes to unrelated keys are preserved. Another application can still write
 between this check and the CLI operation; the CLI has no conditional-write API.
 
@@ -191,7 +196,8 @@ omarchy plugin validate .
 ```
 
 Tests include mocked hardware, actual worker-process protocol/event tests with a
-fake CLI, and an offscreen Quickshell editor smoke test. They never send HID
+stateful fake CLI, partial-write recovery, shared QML service/editor behavior, and
+offscreen Quickshell interaction tests. They never send HID
 commands to your keyboard. The UI test requires installed Omarchy shell components
 and Quickshell; it skips when these are unavailable. Sliders support Tab focus
 and Left/Right arrow adjustment. Mouse-wheel and touchpad scrolling over sliders
@@ -199,6 +205,10 @@ scrolls the popup instead of changing lighting values.
 
 English translations are in `i18n/en.json`;
 other Omarchy languages fall back to English.
+
+Release validation and remaining manual checks are recorded in
+[docs/validation-0.3.0.md](docs/validation-0.3.0.md). Future work is in
+[ROADMAP.md](ROADMAP.md).
 
 ## License
 

@@ -1,0 +1,64 @@
+# 0.3.0 validation record
+
+This record describes the feature branch, before merge or release publication.
+
+Automated result: **53 tests passed**, plugin validation passed, and Git whitespace
+checks passed.
+
+## Completed
+
+- Structured per-key conflicts with original, current, and proposed values.
+  Both resolution choices are draft-only; unresolved conflicts block the whole
+  batch, and subsequent Apply checks again for external changes.
+- Drafts remain detached across uncertain device changes. Compatible identified
+  reconnects reconcile automatically; generic NuPhy serial strings do not count
+  as unique identities. Explicit rebinding cannot bypass geometry/layout checks.
+- Stateful fake CLI tests run the actual worker with temporary device discovery,
+  selectors, TOML parsing, persisted mappings, backups, and partial-write errors.
+- QML integration runs the actual service and two editors against the fake worker,
+  chooses an assignment through the picker, clicks Apply, and verifies shared
+  draft clearing and hardware readback. Other UI fixtures cover conflict
+  resolution, stale editing, identified reconnect, and explicit rebinding.
+- Existing lighting, timeout, backup failure, malformed data, and worker tests
+  remain part of the suite. Tests never open real HID hardware.
+- Wide (760 logical pixels), narrow (360), and 1.5x scale editor renders using
+  live keyboard readings were inspected. A clipped action row was found and
+  changed to a responsive grid. Current-mode initialization was also corrected.
+
+## Hardware command acceptance
+
+Target: NuPhy Air75 V3, firmware 1.0.23.6, vendor 0x19f5/product 0x1028,
+control interface 3, usage page 1/usage 0. Current mode reported Windows.
+
+The acceptance script held the lighting backend state lock to serialize against
+background lighting writes. It read all 784 entries, then temporarily changed:
+
+- Layer 0, index 12: Mac base F12 position.
+- Layer 4, index 12: Windows base F12 position.
+- Layer 4, indices 96 and 97: both knob rotation entries.
+
+The batch applied with no CLI error and all four assignments matched readback.
+A binary pre-apply backup was created. A second explicit batch restored the four
+original values, after which **all 784 entries matched the initial baseline**.
+No factory reset or complete-backup restore was performed.
+
+This verifies protocol writes and readback. It does not verify physical keypress
+or knob behavior: those require a person interacting with the keyboard.
+
+## Remaining manual acceptance before publication
+
+- Press the test key in each tested mode/layer and rotate the knob to confirm
+  physical behavior, then verify restoration again.
+- Physically unplug/reconnect and review the retained detached draft on this
+  board, whose reported serial is the generic `NuPhy Keybord 0720`.
+- Verify the actual anchored bar popup on multiple monitors, including reopen
+  focus, dropdown navigation, Escape ordering, and touchpad scrolling.
+- Compare the physical diagram's stagger and labels with the board. CLI indices
+  are used for assignments; physical dimensions remain a visual approximation.
+- Check an RTL desktop and a second layout/device if available. Unsupported
+  physical layouts use the position selector.
+- Capture final themed screenshots, review the branch, and prepare release notes
+  and PR. Merge, tagging, and publication have not been performed.
+
+The release gate remains open for these manual checks; automated success must
+not be reported as physical desktop or keypress verification.
