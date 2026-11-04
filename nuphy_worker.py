@@ -11,6 +11,7 @@ import sys
 import time
 
 import nuphy_backend as backend
+from nuphy_keymap import Keymap
 
 FALLBACK_SECONDS = 60
 
@@ -72,6 +73,7 @@ def serve():
         except BlockingIOError:
             raise RuntimeError('A NuPhy worker is already running')
         worker = backend.Worker()
+        keymap = Keymap()
         worker.discover()
         selector = selectors.DefaultSelector()
         selector.register(sys.stdin, selectors.EVENT_READ, 'input')
@@ -90,7 +92,11 @@ def serve():
         def emit(request):
             nonlocal last_output
             try:
-                result = worker.execute(request)
+                if request.get('action', '').startswith('keymap-'):
+                    mapping = keymap.execute(request['action'], worker.device, request.get('config'))
+                    result = {**worker.execute({'action': 'status'}), 'keymap': mapping}
+                else:
+                    result = worker.execute(request)
             except (OSError, RuntimeError) as error:
                 result = {'error': str(error)[:600]}
             result['requestId'] = request.get('id')
@@ -124,7 +130,7 @@ def serve():
                             line, buffer = buffer.split(b'\n', 1)
                             try:
                                 request = json.loads(line)
-                                if not isinstance(request, dict) or request.get('action') not in ('apply', 'sync', 'status'):
+                                if not isinstance(request, dict) or request.get('action') not in ('apply', 'sync', 'status', 'keymap-load', 'keymap-apply'):
                                     raise ValueError('Invalid worker request')
                                 if request['action'] != 'status':
                                     # Outside state lock; fresh verification for explicit writes.
