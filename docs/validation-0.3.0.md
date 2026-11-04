@@ -1,6 +1,8 @@
 # 0.3.0 validation record
 
-This record describes the feature branch, before merge or release publication.
+This record describes the 0.3.0 implementation merged into `main` through
+[PR #2](https://github.com/fldc/omarchy-nuphy/pull/2). Manual release acceptance
+remains open; tagging and release publication have not been performed.
 
 Automated result: **54 tests passed**, plugin validation passed, and Git whitespace
 checks passed.
@@ -71,8 +73,8 @@ or knob behavior: those require a person interacting with the keyboard.
   are used for assignments; physical dimensions remain a visual approximation.
 - Check an RTL desktop and a second layout/device if available. Unsupported
   physical layouts now use the schematic matrix view plus the position selector.
-- Capture final themed screenshots, review the branch, and prepare release notes
-  and PR. Merge, tagging, and publication have not been performed.
+- Capture final themed screenshots, review the merged implementation, and prepare
+  release notes. PR #2 is merged; tagging and publication remain outstanding.
 
 The release gate remains open for these manual checks; automated success must
 not be reported as physical desktop or keypress verification.

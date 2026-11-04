@@ -1,15 +1,37 @@
 # Keymap release plan
 
-Status: 0.3.0 implementation and automated/hardware-readback validation updated in November 2026; 0.4.0 remains proposed.
+Status: updated November 4, 2026. The 0.3.0 implementation is merged into
+`main` through [PR #2](https://github.com/fldc/omarchy-nuphy/pull/2).
+The manifest declares 0.3.0; no release tag or GitHub release has been published.
+Release 0.4.0 remains planned work.
 
-The current `feat/keymap-editor` branch contains the initial editor and declares
-version 0.3.0. The validation record in `docs/validation-0.3.0.md` distinguishes completed
-checks from remaining physical interaction and desktop acceptance. Complete the 0.3.0 work
-below before treating the first release as ready.
+## Current progress
 
-## Release 0.3.0: finish the core editor
+| Workstream | Completed | Remaining |
+| --- | --- | --- |
+| Core editor | Read current/factory mappings, shared drafts, explicit batch Apply, backup and readback | Physical input acceptance |
+| Conflicts and reconnects | Per-key resolution, repeat conflict checks, detached drafts, explicit compatible rebinding, generic serial handling | Physical unplug/reconnect and a second keyboard |
+| Air75 V3 diagram | NuPhyIO-style FN0–FN7 labels, contiguous 16-unit geometry, corrected right Shift, current/pending key labels, knob press and rotation controls | Compare against the physical board and exercise the anchored popup |
+| Other layouts | Scrollable firmware matrix, selectable zero-valued entries, separate extra controls, position selector | Validate on another actual model |
+| Layout requests | Repository issue template and prefilled issue link shown only for unsupported layouts; model/geometry metadata only | Use incoming requests to add verified physical layouts |
+| Automated checks | 54 passing tests, plugin validation, whitespace checks; fake-CLI worker and shared-editor interaction coverage | Review the unverified scenarios listed below |
+| Visual checks | Wide, narrow and 1.5x scale renders; clipping and width binding-loop fixes | Actual multi-monitor popup, RTL, keyboard focus/navigation and final themed screenshots |
+| Hardware protocol | Air75 V3 firmware 1.0.23.6: batch writes across both modes and knob directions, verified restoration of all 784 entries | Physical keypress/knob behavior and reconnect acceptance |
+| Delivery | PR #2 merged into main | Release notes, final acceptance, tag and publication |
 
-### 1. Make conflicts explicit
+Detailed evidence and outstanding manual checks are recorded in
+[the 0.3.0 validation record](docs/validation-0.3.0.md). The layout issue template
+is in [.github/ISSUE_TEMPLATE/keyboard-layout.md](.github/ISSUE_TEMPLATE/keyboard-layout.md).
+Passing tests and rendered previews do not establish physical input or desktop
+acceptance.
+
+## Release 0.3.0: finish acceptance and publication
+
+The detailed behavior and acceptance criteria below remain the release checklist.
+The progress table above distinguishes implemented behavior from checks still
+needing evidence.
+
+### 1. Conflict handling — implemented
 
 Files: `nuphy_keymap.py`, `Service.qml`, `KeymapEditor.qml`, translations, tests.
 
@@ -30,7 +52,7 @@ Acceptance: change a pending key externally, refresh or apply, resolve it using
 either choice, and verify the resulting draft and commands. Unrelated changes
 must survive. Already-satisfied edits disappear without a write.
 
-### 2. Preserve drafts across reconnects
+### 2. Reconnect drafts — implemented; physical acceptance pending
 
 Files: backend device metadata, `nuphy_worker.py`, `Service.qml`, editor, tests.
 
@@ -56,7 +78,7 @@ Acceptance: cover identified reconnect, a device without a serial, another unit
 of the same model, reused hidraw paths, changed geometry, ambiguous devices, and
 delayed responses. No path may automatically write or silently lose a draft.
 
-### 3. Exercise the complete command and UI flow
+### 3. Worker and UI coverage — current suite passing
 
 Files: `tests/test_keymap.py`, `tests/test_worker.py`, QML smoke fixtures, and a
 reusable fake CLI/device fixture.
@@ -83,13 +105,13 @@ Acceptance: the complete suite and plugin validation pass with hardware access
 isolated. Failures are asserted from actual protocol/UI behavior, not only mocks
 of internal methods.
 
-### 4. Verify and polish the live UI
+### 4. UI polish — implemented; desktop acceptance pending
 
 - Inspect the running widget at normal and increased UI scale, on wide and
   narrow available screen areas, and on multiple monitors where available.
 - Compare every drawn Air75 V3 key and knob control against the physical board
   and CLI index map. Correct spacing, widths, labels, and index associations.
-- Check that the key selector fallback, action footer, pending list, and search
+- Check that the matrix fallback, position selector, action footer, pending list, and search
   results remain reachable without clipping or unreadable text.
 - Check Tab, Enter/Space, arrow navigation, focus on reopen, and Escape ordering
   across dropdowns, the assignment picker, and the outer popup.
@@ -101,7 +123,7 @@ of internal methods.
 Acceptance: record the checked display/scale configurations and capture the
 final UI for review. Resolve any QML warnings caused by these interactions.
 
-### 5. Perform hardware acceptance and prepare release
+### 5. Hardware and release — readback verified; manual checks pending
 
 - Record keyboard model, firmware, CLI build/version, and control interface.
 - Save and verify a full baseline backup before the first test write.
@@ -115,11 +137,19 @@ final UI for review. Resolve any QML warnings caused by these interactions.
   unrelated existing customizations are preserved.
 - Update README behavior, supported-device notes, dependency requirements,
   screenshots, and release notes to match the verified implementation.
-- Review the complete branch, rerun affected checks, and prepare the 0.3.0 PR.
-  Merge, tagging, and publication are separate release actions.
+- PR #2 is merged. Finish the acceptance record, review the merged implementation,
+  rerun affected checks after any fixes, then prepare release notes, tagging,
+  and publication as separate explicit release actions.
 
-Release gate: steps 1–5 have evidence, no unresolved write/recovery defects, and
-remaining device/layout limitations are documented.
+Coverage follow-up before closing acceptance: audit which intended paths have
+integration evidence, particularly worker death during an operation, delayed
+responses, changed geometry/reused device paths, lighting/theme events during
+keymap work, and full keyboard-driven popup interactions. Existing unit or helper
+coverage should not be recorded as a completed end-to-end check without evidence.
+
+Release gate: close the outstanding checks in the validation record, establish
+that there are no unresolved write/recovery defects, and document remaining
+device/layout limitations. The gate remains open for manual acceptance.
 
 ## Release 0.4.0: reusable mappings and recovery controls
 
@@ -243,23 +273,28 @@ to the recorded baseline after acceptance.
   that accepts expected old values and checks them in the write session. Document
   any remaining firmware/external-client race; host-side checks cannot promise
   device-level atomicity by themselves.
+- **Additional physical layouts:** use the merged issue template to collect
+  model/variant, geometry, and full-board references. Add each verified physical
+  index/geometry definition with selection and label coverage; use the existing
+  matrix view until that model is verified.
 - **Automatic profiles, full-layout profile replacement, persistent unfinished
-  drafts, additional physical layouts, and backup retention policies:** design
-  separately after the explicit workflows have been exercised in practice.
+  drafts, and backup retention policies:** design separately after the explicit
+  workflows have been exercised in practice.
 
-## Suggested implementation order and commits
+## Remaining delivery order
 
-1. `fix(keymap): expose and resolve per-key conflicts`
-2. `fix(keymap): retain drafts across keyboard reconnects`
-3. `test(keymap): cover full worker and shared editor flows`
-4. UI fixes and acceptance documentation for 0.3.0, scoped to findings.
-5. `feat(keymap): add operation previews and backup metadata`
-6. `feat(keymap): import and export TOML mappings`
-7. `feat(keymap): manage named local profiles`
-8. `feat(keymap): preview and restore recovery backups`
-9. `feat(keymap): reset selected modes to factory mappings`
-10. Acceptance documentation and release preparation for 0.4.0.
+1. Complete 0.3.0 physical keypress/knob and unplug/reconnect acceptance, restoring
+   and comparing the full baseline after any test writes.
+2. Complete anchored-popup, multi-monitor, RTL and keyboard-navigation acceptance;
+   capture final themed screenshots and fix any findings.
+3. Audit outstanding integration scenarios above, adding targeted coverage where
+   needed. Update the validation record with evidence rather than assumptions.
+4. Finish 0.3.0 release notes and publication steps after the acceptance gate closes.
+5. Begin 0.4.0 with common operation previews, CLI capability checks and backup
+   metadata, then TOML import/export, named profiles, reviewed backup restore,
+   and mode-scoped factory reset, in that dependency order.
+6. Complete the 0.4.0 tests, visual review, hardware acceptance and release record.
 
-Keep focused tests with each behavioral change; the dedicated test step adds
-coverage across component boundaries. Each release should be reviewable and
-usable before beginning the next release's feature work.
+Keep focused tests with each behavioral change. Each release should be validated
+and usable before beginning the next release's feature work. Layout requests can
+be collected now; the matrix fallback is already available on main.
