@@ -24,7 +24,10 @@ FloatingWindow {
         if (service.actionBusy) return
         if (window.phase === 0 && service.ready) { service.loadKeymap(); window.phase = 1 }
         else if (window.phase === 1 && service.keymapCurrent) {
-          editor.selected = 0
+          var matrix = window.child(editor, "matrixDiagram")
+          var matrixKey = window.child(matrix, "diagramKey-0")
+          events.mouseClick(matrixKey, matrixKey.width/2, matrixKey.height/2, Qt.LeftButton, Qt.NoModifier, 1)
+          if (editor.selected !== 0) throw new Error("Matrix selection failed")
           var choose = window.child(editor, "keymapChoose")
           events.mouseClick(choose, choose.width/2, choose.height/2, Qt.LeftButton, Qt.NoModifier, 1)
           var search = window.child(editor, "keycodeSearch")

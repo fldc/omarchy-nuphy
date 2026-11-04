@@ -21,7 +21,23 @@ ColumnLayout {
   readonly property var draft: drafts[selectedLayer + ":" + selected] || null
   readonly property bool editable: service && service.keymapCurrent && !service.actionBusy && !service.detachedDraft
   readonly property bool air75: /air75\s*v3/i.test(String(info.product || "")) && info.matrix && info.matrix.rows === 6 && info.matrix.cols === 16 && info.extra_entries === 2
+  readonly property bool hasMatrix: !!info.matrix && info.matrix.rows > 0 && info.matrix.cols > 0
+  property string layoutLinkError: ""
   signal closeRequested()
+  function layoutIssueUrl() {
+    // Share model/geometry only; never include mappings, serials or local paths.
+    var product = String(info.product || "Unknown NuPhy keyboard").replace(/[\r\n]/g, " ").slice(0, 128)
+    var body = "### Keyboard layout request\n\n" +
+      "Model: " + product + "\n" +
+      "Firmware: " + String(info.firmware_version || "Unknown").slice(0, 80) + "\n" +
+      "Matrix: " + (hasMatrix ? info.matrix.rows + " rows × " + info.matrix.cols + " columns" : "Unknown") + "\n" +
+      "Extra entries: " + (info.extra_entries || 0) + "\n" +
+      "Layers: " + (info.layer_count || "Unknown") + "\n\n" +
+      "### Physical layout\nPlease attach a clear top-down keyboard photo or a screenshot from NuPhyIO.\n" +
+      "State ANSI/ISO/JIS, keyboard size, and any knob or other extra controls.\n\n" +
+      "### What needs changing?\nDescribe missing or misplaced keys and label differences.\n"
+    return "https://github.com/fldc/omarchy-nuphy/issues/new?template=keyboard-layout.md&title=" + encodeURIComponent("Layout support: " + product) + "&body=" + encodeURIComponent(body)
+  }
   focus: true
   implicitHeight: Commons.Style.space(660)
   spacing: Commons.Style.space(8)
@@ -31,6 +47,10 @@ ColumnLayout {
   function codeLabel(value) {
     var code = (state.codes || []).find(function(c) { return c.value === value })
     return code ? code.name : "0x" + value.toString(16)
+  }
+  function knobLabel(index) {
+    var address = selectedLayer + ":" + index
+    return drafts[address] ? codeLabel(drafts[address].value) : label(keys[address])
   }
   function stage(value) { if (entry && editable) service.stage(selectedLayer, selected, value); pickerOpen = false }
   function initialize() {
@@ -88,14 +108,79 @@ ColumnLayout {
       KeyboardLayout {
         Layout.fillWidth: true
         visible: root.air75 && root.width >= Commons.Style.space(620)
-        keys: root.keys; factory: root.state.factory || ({}); drafts: root.drafts; selectedLayer: root.selectedLayer; selected: root.selected
+        codes: root.state.codes || []; keys: root.keys; factory: root.state.factory || ({}); drafts: root.drafts; selectedLayer: root.selectedLayer; selected: root.selected
         enabled: root.editable
         onSelectedKey: function(index) { root.selected = index; root.pickerOpen = false }
       }
-      RowLayout {
+      PlainText {
+        Layout.fillWidth: true; visible: !root.air75 && root.hasMatrix
+        text: strings.t("keymapMatrixHelp")
+      }
+      Controls.ScrollView {
+        id: matrixScroll
+        objectName: "matrixView"
+        implicitWidth: 0
+        Layout.minimumWidth: 0
+        Layout.fillWidth: true
+        Layout.preferredHeight: matrixDiagram.implicitHeight + Commons.Style.space(16)
+        visible: !root.air75 && root.hasMatrix
+        clip: true
+        contentWidth: matrixDiagram.width
+        contentHeight: matrixDiagram.implicitHeight
+        Controls.ScrollBar.vertical.policy: Controls.ScrollBar.AlwaysOff
+        Controls.ScrollBar.horizontal.policy: Controls.ScrollBar.AsNeeded
+        KeyboardLayout {
+          id: matrixDiagram
+          objectName: "matrixDiagram"
+          width: Math.max(matrixCols * Commons.Style.space(42), Math.min(root.width, matrixCols * Commons.Style.space(60)))
+          height: implicitHeight
+          matrixMode: true
+          matrixRows: !root.air75 && root.info.matrix ? root.info.matrix.rows : 0
+          matrixCols: !root.air75 && root.info.matrix ? root.info.matrix.cols : 0
+          codes: root.state.codes || []; keys: root.keys; factory: root.state.factory || ({}); drafts: root.drafts
+          selectedLayer: root.selectedLayer; selected: root.selected
+          enabled: root.editable
+          onSelectedKey: function(index) { root.selected = index; root.pickerOpen = false }
+        }
+      }
+      PlainText { Layout.fillWidth: true; visible: !root.air75 && root.hasMatrix && root.info.extra_entries > 0; text: strings.t("keymapExtraEntries") }
+      Flow {
+        Layout.fillWidth: true
+        spacing: Commons.Style.space(6)
+        visible: !root.air75 && root.hasMatrix
+        Repeater {
+          model: !root.air75 && root.hasMatrix ? (root.info.extra_entries || 0) : 0
+          delegate: Ui.Button {
+            required property int index
+            readonly property int entryIndex: root.info.matrix.rows * root.info.matrix.cols + index
+            objectName: "extraEntry-" + entryIndex
+            text: "#" + entryIndex + " · " + root.knobLabel(entryIndex)
+            tooltipText: (root.keys[root.selectedLayer + ":" + entryIndex] || {}).position || "#" + entryIndex
+            enabled: root.editable
+            selected: root.selected === entryIndex
+            bordered: true; focusable: true
+            foreground: Commons.Color.popups.text
+            onClicked: { root.selected = entryIndex; root.pickerOpen = false }
+          }
+        }
+      }
+      Ui.Button {
+        objectName: "requestLayout"
+        Layout.fillWidth: true
+        text: strings.t("keymapRequestLayout")
+        tooltipText: strings.t("keymapRequestLayoutHelp")
+        visible: root.hasMatrix && !root.air75
+        focusable: true
+        foreground: Commons.Color.popups.text
+        onClicked: root.layoutLinkError = Qt.openUrlExternally(root.layoutIssueUrl()) ? "" : strings.t("keymapLayoutLinkError")
+      }
+      PlainText { Layout.fillWidth: true; visible: root.hasMatrix && !root.air75 && !!root.layoutLinkError; text: root.layoutLinkError; color: Commons.Color.urgent }
+      GridLayout {
+        Layout.fillWidth: true
+        columns: root.width < Commons.Style.space(620) ? 1 : 2
         visible: root.air75
-        Ui.Button { text: strings.t("keymapKnobCcw"); enabled: root.editable; focusable: true; onClicked: { root.selected = 96; root.pickerOpen = false } }
-        Ui.Button { text: strings.t("keymapKnobCw"); enabled: root.editable; focusable: true; onClicked: { root.selected = 97; root.pickerOpen = false } }
+        Ui.Button { text: strings.t("keymapKnobCcw") + " · " + root.knobLabel(96); enabled: root.editable; focusable: true; onClicked: { root.selected = 96; root.pickerOpen = false } }
+        Ui.Button { text: strings.t("keymapKnobCw") + " · " + root.knobLabel(97); enabled: root.editable; focusable: true; onClicked: { root.selected = 97; root.pickerOpen = false } }
       }
       Ui.Dropdown {
         objectName: "keyPosition"
@@ -110,7 +195,7 @@ ColumnLayout {
       }
       PlainText {
         Layout.fillWidth: true; visible: !!root.entry
-        text: strings.t("keymapAssignments").arg(root.label(root.entry)).arg(root.label(root.factory)).arg(root.draft ? "0x" + root.draft.value.toString(16) : "—")
+        text: strings.t("keymapAssignments").arg(root.label(root.entry)).arg(root.label(root.factory)).arg(root.draft ? root.codeLabel(root.draft.value) : "—")
       }
       GridLayout {
         Layout.fillWidth: true

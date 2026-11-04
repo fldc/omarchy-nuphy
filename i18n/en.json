@@ -53,5 +53,13 @@
   "keymapConflict": "Conflict: keyboard now has %1. Choose which assignment to keep.",
   "keymapKeepKeyboard": "Keep keyboard assignment",
   "keymapKeepEdit": "Keep my edit",
-  "keymapSelect": "Select a key"
+  "keymapSelect": "Select a key",
+  "keymapKeyTip": "%1: %2",
+  "keymapKnobPress": "Knob press",
+  "keymapMatrixHelp": "Matrix view — cells follow firmware rows and columns, which may differ from physical key positions. Scroll sideways to see all columns.",
+  "keymapMatrixPosition": "Row %1, column %2 (#%3)",
+  "keymapExtraEntries": "Extra controls",
+  "keymapRequestLayout": "Request or correct a keyboard layout ↗",
+  "keymapRequestLayoutHelp": "Open a GitHub issue draft with the model, firmware and geometry. Add a photo or NuPhyIO screenshot before submitting.",
+  "keymapLayoutLinkError": "Could not open the browser. Report the layout at github.com/fldc/omarchy-nuphy/issues."
 }

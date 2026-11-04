@@ -14,6 +14,9 @@ class UiTests(unittest.TestCase):
     def test_keymap_behavior(self):
         self.run_scene("KeymapSmoke", "NuPhy keymap smoke passed")
 
+    def test_matrix_behavior(self):
+        self.run_scene("MatrixSmoke", "NuPhy matrix smoke passed")
+
     def test_keymap_flow(self):
         self.run_scene("KeymapFlow", "NuPhy keymap flow passed")
 
@@ -43,6 +46,7 @@ class UiTests(unittest.TestCase):
             self.assertIn(success, output)
             self.assertNotIn('TypeError', output)
             self.assertNotIn('ReferenceError', output)
+            self.assertNotIn('Binding loop detected', output)
 
 
 if __name__ == '__main__':
