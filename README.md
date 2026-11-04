@@ -5,7 +5,7 @@ keymap editing on NuPhy keyboards supported by `nuphyctl`.
 The title follows the connected keyboard’s reported product name; when the CLI
 cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
-![NuPhy lighting widget with Omarchy theme sync and RGB controls](screenshots/widget.png)
+![NuPhy Air75 V3 Lighting tab with Omarchy theme sync and RGB controls](screenshots/widget.png)
 
 - Independent backlight and side-light controls.
 - All 20 main effects and all five side-light effects exposed by nuphyctl.
@@ -158,6 +158,8 @@ omarchy-shell nuphy toggle
 
 ### Keymap editing
 
+![NuPhy Air75 V3 Keymap tab showing the physical keyboard layout and Windows FN4 assignments](screenshots/keymap.png)
+
 Open **Keymap** to read the keyboard's current and factory mappings. Readings
 are cached while the service is running; reopening the popup keeps them. Use
 **Refresh** after changing mappings with NuPhyIO or another tool. These readings
@@ -251,5 +253,5 @@ Release validation and remaining manual checks are recorded in
 
 ## License
 
-[MIT](LICENSE). The screenshot and marketplace preview are included under the
+[MIT](LICENSE). The screenshots and marketplace preview are included under the
 same license.
