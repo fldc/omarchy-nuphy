@@ -1,6 +1,7 @@
 # NuPhy for Omarchy
 
-A native Quickshell bar plugin for NuPhy keyboards supported by `nuphyctl`.
+A native Quickshell bar plugin for lighting control, Omarchy theme sync, and
+keymap editing on NuPhy keyboards supported by `nuphyctl`.
 The title follows the connected keyboard’s reported product name; when the CLI
 cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 
@@ -14,13 +15,17 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 - Verified NuPhy targets with explicit HID interface selectors on every write.
 - One persistent service shared by all monitors, with serialized HID writes.
 - Event-driven theme and hotplug detection, with a 60-second discovery fallback.
-- 12-second HID command timeout, 30-second failure retry cooldown.
+- 12-second lighting command timeout and 30-second automatic lighting retry cooldown.
+- 30-second timeout per keymap CLI command; keymap writes require an explicit Apply.
 - Device-specific sync cache, invalidated on reconnect and worker restart.
 - Lazy popup creation, per-zone editing drafts, and keyboard-adjustable sliders.
 - Atomic preferences with safe recovery and backups of damaged state.
 - Visual Air75 V3 keymap editor, searchable assignments, and shared editing drafts.
+- Scrollable matrix view for other layouts, with a link to request a physical diagram.
+- NuPhyIO layer numbering: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
 - Explicit keymap Apply with conflict checks, recovery backups, and readback.
-- Persistent lighting preferences; no network access or elevated privileges.
+- Persistent lighting preferences; no background network access or elevated privileges.
+- Optional layout requests open GitHub in your browser for review and submission.
 
 ## Install
 
@@ -65,6 +70,13 @@ without `--enable`, enable it later with:
 omarchy plugin enable local.nuphy
 ```
 
+After upgrading to 0.3.0, restart the shell so the persistent worker loads the
+keymap backend:
+
+```bash
+omarchy restart shell
+```
+
 ### Local development install
 
 To load a local checkout instead of installing from GitHub:
@@ -77,8 +89,8 @@ omarchy plugin enable local.nuphy
 
 Run the symlink command from this project directory. Do not overwrite an existing
 plugin with the same ID. Layout changes hot-reload; if plugin code stays cached,
-run `omarchy restart shell`. The 0.2.0 update adds a service entry point and needs
-one shell restart when upgrading from 0.1.0.
+run `omarchy restart shell`. Upgrading from 0.1.0 also requires a restart because
+later versions add a service entry point.
 
 ## Disable or remove
 
@@ -102,8 +114,9 @@ keyboard after the plugin is removed.
 
 ## Use
 
-Click the keyboard icon, open **Lighting**, select a lighting zone, edit its preferences and click
-**Apply lighting**. To sync a zone, check **Follow Omarchy theme** and Apply.
+Click the keyboard icon, open **Lighting**, select a lighting zone, edit its
+preferences and click **Apply lighting**. To sync a zone, check **Follow Omarchy
+theme** and Apply.
 Click the color square to open an inline color picker. Choose a hue, then use
 the color field to adjust saturation and value. Picking a color switches the
 selected zone to manual mode; no HID command is sent until you click Apply.
@@ -145,11 +158,18 @@ omarchy-shell nuphy toggle
 
 ### Keymap editing
 
-Open **Keymap**, then choose a mode, layer, and physical key. The mode selector
-chooses which mappings to edit; it does not change the keyboard’s hardware mode.
+Open **Keymap** to read the keyboard's current and factory mappings. Readings
+are cached while the service is running; reopening the popup keeps them. Use
+**Refresh** after changing mappings with NuPhyIO or another tool. These readings
+come from the keyboard; pending edits are kept separately until Apply.
+
+Choose a mode, layer, and key in the diagram, matrix view, or position selector.
+The mode selector chooses which mappings to edit; it does not change the
+keyboard’s hardware mode.
 Layer labels follow NuPhyIO: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
 Select **Choose assignment** to search keycodes by name, alias, group, or description.
-Momentary layer assignments appear as `MO(n)`, using absolute layer numbers.
+Momentary layer assignments appear as `MO(n)` in the assignment picker and
+`FNn` on the diagram, using absolute layer numbers.
 **Use factory assignment** stages the factory value for the selected key;
 **Revert edit** removes its pending change.
 
@@ -161,24 +181,26 @@ scroll horizontally to keep cells readable. Zero and transparent assignments
 remain selectable. The position selector remains available below the view;
 narrow Air75 popups use that selector.
 
-For unsupported layouts, **Request or correct a keyboard layout** opens a prefilled GitHub issue draft
-with the model, firmware, matrix dimensions, extra-entry count and layer count.
+For unsupported layouts, **Request or correct a keyboard layout** opens a
+prefilled GitHub issue draft with the model, firmware, matrix dimensions,
+extra-entry count and layer count.
 Add a top-down photo or NuPhyIO screenshot and layout details before submitting.
 Serial numbers, HID paths and keymap contents are excluded. Opening the link
-does not submit the issue. The [keyboard layout issue template](.github/ISSUE_TEMPLATE/keyboard-layout.md)
-can also be used directly from GitHub’s New issue page once it is merged into
-the default branch.
+does not submit the issue. You can also
+[request a layout directly on GitHub](https://github.com/fldc/omarchy-nuphy/issues/new?template=keyboard-layout.md)
+using the [repository issue template](.github/ISSUE_TEMPLATE/keyboard-layout.md).
 
-Named positions use
-the CLI’s Windows legends even while editing Mac mode. Diagram keys show current
-or pending assignments; hover a key for its physical position and full assignment. `•` marks an unapplied
-edit; `*` on the diagram marks an assignment changed from factory. Unknown
-keycodes retain their numeric values.
+Named positions use the CLI’s Windows legends even while editing Mac mode.
+Diagram keys show current or pending assignments; hover a key for its physical
+position and full assignment. `•` marks an unapplied edit; `*` on the diagram
+marks an assignment changed from factory. Unknown keycodes retain their numeric
+values.
 
 **Apply changes** writes all pending changes across modes and layers. Opening,
 refreshing, selecting keys, and editing never write mappings. Drafts are shared
-across monitors and survive popup closes until explicitly discarded. A shell restart clears in-memory drafts. Disconnecting
-blocks writes until a successful refresh. Reconnecting an identified keyboard
+across monitors and survive popup closes until applied or discarded. A shell
+restart clears in-memory drafts. Disconnecting blocks writes until a successful
+refresh. Reconnecting an identified keyboard
 reconciles the draft; an uncertain identity keeps it detached until you choose
 **Review draft for this keyboard**. Incompatible layouts cannot accept that draft.
 Generic vendor serial strings (including `NuPhy Keybord 0720`) are not treated as
@@ -187,9 +209,9 @@ unique device identification. Keymap errors never automatically retry.
 Before applying, the worker reads the keyboard again, saves a binary recovery
 backup under `$XDG_STATE_HOME/omarchy-nuphy/keymap-backups/`, and checks edited
 keys for external changes. Conflicts stop the entire write. Each conflicting key
-shows its current keyboard assignment alongside the original and proposed values. **Keep keyboard assignment**
-removes the edit; **Keep my edit** acknowledges the current value as its new
-baseline. Both choices only update the draft. Apply rechecks for new conflicts.
+shows its current keyboard assignment alongside the original and proposed values.
+**Keep keyboard assignment** removes the edit; **Keep my edit** acknowledges the
+current value as its new baseline. Both choices only update the draft. Apply rechecks for new conflicts.
 Changes to unrelated keys are preserved. Another application can still write
 between this check and the CLI operation; the CLI has no conditional-write API.
 
