@@ -43,7 +43,12 @@ Install `nuphyctl` from the AUR using the
 omarchy pkg aur add nuphyctl-bin
 ```
 
-The `nuphyctl-bin` package (reviewed version: `0.6.1-1`) installs a udev rule
+The documented `nuphyctl-bin` package version is **`0.6.2-1`**, built from
+[`nuphyctl v0.6.2`](https://github.com/fldc/nuphyctl/releases/tag/v0.6.2).
+That release includes signed build provenance for both architectures' executables
+and archives; see the [upstream verification instructions](https://github.com/fldc/nuphyctl/blob/v0.6.2/docs/releases.md).
+
+The package installs a udev rule
 that grants the active local seat access to NuPhy hidraw devices. After installing
 or updating it, disconnect and reconnect the keyboard while logged into your
 local desktop session. Run Omarchy and `nuphyctl` as your normal user, not root.
