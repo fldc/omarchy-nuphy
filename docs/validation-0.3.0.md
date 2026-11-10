@@ -78,3 +78,31 @@ or knob behavior: those require a person interacting with the keyboard.
 
 The release gate remains open for these manual checks; automated success must
 not be reported as physical desktop or keypress verification.
+
+## Marketplace review follow-up — November 10, 2026
+
+The fixes following review of commit `396c595` pass **62 tests**, plugin
+validation, and Git whitespace checks. The marketplace update is tracked in
+[request #14596](https://github.com/omacom/omarchy-plugin-marketplace/issues/14596).
+
+- Both text fields route Ctrl+V, Shift+Insert, context-menu paste and middle-click
+  PRIMARY paste through an asynchronous `wl-paste` helper. The transfer has a
+  4 KiB byte cap and a two-second deadline before insertion into Qt; field lengths
+  still apply. Replies are ignored after focus, text or selection changes.
+- CLI stdout/stderr are drained concurrently through capped pipes (256 KiB
+  lighting/discovery, 4 MiB keymap, 4 KiB stderr), replacing unbounded capture and
+  temporary-file output. Overflow or timeout kills the command's process group.
+- State/theme reads are isolated behind a one-second deadline. Opens use
+  `O_NONBLOCK`, followed by a regular-file check and byte cap (64 KiB state,
+  128 bytes theme). The unchanged-state comparison uses the same bounded path.
+- The service clears busy/stale state and retries after five seconds when the
+  worker's running flag clears, including `FailedToStart` without `exited`.
+- New tests exercise infinite stdout/stderr, silent and streaming timeouts,
+  inherited pipes, FIFOs, special files, malformed UTF-8, symlink reads, clipboard
+  helper overflow/stalls, actual QML paste gestures and failed-start recovery.
+  The existing fake-CLI apply/conflict/readback tests also pass.
+
+Clipboard transfer tests use a fake `wl-paste`; UI tests run offscreen. No live
+Wayland clipboard-owner attack, physical keyboard writes, or multi-monitor
+acceptance was performed for this follow-up. `wl-paste` is a documented paste
+runtime dependency; a missing executable leaves typed editing available.

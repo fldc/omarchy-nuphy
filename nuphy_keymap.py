@@ -31,17 +31,11 @@ def cli(args, device=None):
         for flag, field in [('path', 'path'), ('vid', 'vid'), ('pid', 'pid'), ('iface', 'iface'),
                             ('usage-page', 'page'), ('usage', 'usage')]:
             command += ['--' + flag, str(device[field])]
-    # File-backed output keeps large/malformed CLI responses out of shell memory.
-    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-        result = subprocess.run(command, stdout=out, stderr=err, timeout=30)
-        out.seek(0)
-        raw = out.read(LIMIT + 1)
-        err.seek(0)
-        diagnostic = err.read(4096).decode(errors='replace')
+    result = backend.run_command(command, timeout=30, limit=LIMIT)
+    raw = result.stdout
+    diagnostic = result.stderr
     if result.returncode:
         raise CommandError(diagnostic.strip()[:600] or 'nuphyctl keymap failed')
-    if len(raw) > LIMIT:
-        raise ValueError('Keymap response too large')
     value = json.loads(raw)
     if not isinstance(value, dict):
         raise ValueError('Invalid keymap response')

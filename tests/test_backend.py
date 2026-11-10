@@ -37,7 +37,7 @@ class BackendTests(unittest.TestCase):
         self.addCleanup(identity.stop)
 
     def success(self):
-        return patch.object(b.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '', ''))
+        return patch.object(b, 'run_command', return_value=subprocess.CompletedProcess([], 0, '', ''))
 
     def test_product_names(self):
         for product in ['Air75 V3', 'Air96 V2', 'Halo75', 'NuPhy Kick75']:
@@ -202,7 +202,7 @@ class BackendTests(unittest.TestCase):
         state = b.defaults()
         with self.success():
             b.run(state, 'apply', self.device, 'main', {})
-        with patch.object(b.subprocess, 'run', return_value=subprocess.CompletedProcess([], 1, '', 'Disconnected')):
+        with patch.object(b, 'run_command', return_value=subprocess.CompletedProcess([], 1, '', 'Disconnected')):
             with self.assertRaises(RuntimeError):
                 b.run(state, 'apply', self.device, 'main', {})
         self.assertNotIn('main', state['applied'])
@@ -228,7 +228,7 @@ class BackendTests(unittest.TestCase):
     def test_timeout_is_reported_and_not_cached(self):
         worker = b.Worker()
         worker.device = self.device
-        with patch.object(b.subprocess, 'run', side_effect=subprocess.TimeoutExpired('nuphyctl', 12)):
+        with patch.object(b, 'run_command', side_effect=subprocess.TimeoutExpired('nuphyctl', 12)):
             result = worker.execute({'action': 'apply', 'zone': 'main', 'config': {}})
         self.assertIn('timed out', result['error'])
         self.assertNotIn('main', result['applied'])
@@ -291,7 +291,7 @@ class BackendTests(unittest.TestCase):
             worker = b.Worker()
             worker.device = self.device
             return worker.execute({'action': 'apply', 'zone': zone, 'config': {'brightness': 42}})
-        with patch.object(b.subprocess, 'run', side_effect=write), concurrent.futures.ThreadPoolExecutor(2) as pool:
+        with patch.object(b, 'run_command', side_effect=write), concurrent.futures.ThreadPoolExecutor(2) as pool:
             results = list(pool.map(execute, ['main', 'side']))
         self.assertEqual(peak, 1)
         self.assertFalse(any(result['error'] for result in results))

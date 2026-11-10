@@ -15,11 +15,11 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 - Verified NuPhy targets with explicit HID interface selectors on every write.
 - One persistent service shared by all monitors, with serialized HID writes.
 - Event-driven theme and hotplug detection, with a 60-second discovery fallback.
-- 12-second lighting command timeout and 30-second automatic lighting retry cooldown.
+- 12-second lighting command timeout, bounded CLI output and 30-second automatic lighting retry cooldown.
 - 30-second timeout per keymap CLI command; keymap writes require an explicit Apply.
 - Device-specific sync cache, invalidated on reconnect and worker restart.
 - Lazy popup creation, per-zone editing drafts, and keyboard-adjustable sliders.
-- Atomic preferences with safe recovery and backups of damaged state.
+- Atomic preferences with safe recovery, bounded file reads and backups of damaged state.
 - Visual Air75 V3 keymap editor, searchable assignments, and shared editing drafts.
 - Scrollable matrix view for other layouts, with a link to request a physical diagram.
 - NuPhyIO layer numbering: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
@@ -33,6 +33,8 @@ Requires Omarchy’s Quickshell-based shell, Python 3 and
 [`nuphyctl`](https://github.com/fldc/nuphyctl) on PATH.
 **Manual setup is required:** installing this plugin does not install its CLI
 dependency or grant access to the keyboard's HID control interface.
+Clipboard paste uses `wl-paste` from `wl-clipboard` (included with Omarchy);
+normal typing and the color picker remain available if it is missing.
 
 Install `nuphyctl` from the AUR using the
 [`nuphyctl-bin`](https://aur.archlinux.org/packages/nuphyctl-bin) package:
@@ -127,13 +129,18 @@ again. This choice is saved separately for each zone.
 
 Sync is initially disabled for every zone: installing the widget never changes
 the keyboard on its own. Linux inotify watches the theme file, its symlink
-ancestors, and HID device-node changes. Events are coalesced for 200 milliseconds;
-theme changes do not spawn helper processes unless enabled lighting needs a write.
+ancestors, and HID device-node changes. Events are coalesced for 200 milliseconds.
+Bounded helper reads refresh configuration on events; CLI lighting commands run
+when enabled lighting needs a write.
 One slow fallback enumerates devices every 60 seconds, regardless of monitor count.
 
 **Sync enabled zones now** forces a reapply, useful after reconnecting or changing
 lighting with the keyboard itself. Preferences are not live hardware readings;
 `nuphyctl` currently provides lighting writes but no lighting-state readback.
+Paste in the color and assignment-search fields runs asynchronously with a
+4 KiB transfer limit and a two-second deadline. Ctrl+V, Shift+Insert, the context
+menu, and middle-click selection paste use this path. Oversized or stalled
+transfers leave the field unchanged; a delayed reply cannot replace newer edits.
 Pending edits survive zone switches while the popup component is loaded.
 Apply saves a zone’s preferences
 even if the device is disconnected; enabled sync retries after 30 seconds.
@@ -237,7 +244,8 @@ omarchy plugin validate .
 ```
 
 Tests include mocked hardware, actual worker-process protocol/event tests with a
-stateful fake CLI, partial-write recovery, shared QML service/editor behavior, and
+stateful fake CLI, partial-write recovery, bounded I/O and paste, worker startup
+recovery, shared QML service/editor behavior, and
 offscreen Quickshell interaction tests. They never send HID
 commands to your keyboard. The UI test requires installed Omarchy shell components
 and Quickshell; it skips when these are unavailable. Sliders support Tab focus

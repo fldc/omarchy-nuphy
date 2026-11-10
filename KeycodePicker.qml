@@ -18,7 +18,7 @@ ColumnLayout {
   readonly property var filtered: allCodes.filter(function(k) {
     return (k.name + " " + k.group + " " + k.description + " " + k.aliases).toLowerCase().indexOf(search.text.toLowerCase()) >= 0
   })
-  Ui.TextField {
+  BoundedTextField {
     id: search; objectName: "keycodeSearch"
     Layout.fillWidth: true; placeholderText: strings.t("keymapSearch")
     foreground: Commons.Color.popups.text; maximumLength: 100

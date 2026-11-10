@@ -95,14 +95,13 @@ class KeymapTests(unittest.TestCase):
 
     def test_explicit_selectors_and_json(self):
         device = {'identity': 'test', 'path': '/dev/hidraw9', 'vid': 6645, 'pid': 1, 'iface': 3, 'page': 1, 'usage': 0}
-        def run(args, stdout, stderr, timeout):
+        def run(args, *, timeout, limit):
             self.assertIn('--path', args)
             self.assertIn('--iface', args)
             self.assertIn('--usage-page', args)
             self.assertIn('--vid', args)
-            stdout.write(json.dumps({'ok': True}).encode())
-            return subprocess.CompletedProcess(args, 0)
-        with patch.object(km.backend, 'device_identity', return_value='test'), patch.object(km.subprocess, 'run', side_effect=run):
+            return subprocess.CompletedProcess(args, 0, json.dumps({'ok': True}), '')
+        with patch.object(km.backend, 'device_identity', return_value='test'), patch.object(km.backend, 'run_command', side_effect=run):
             self.assertTrue(km.cli(['info'], device)['ok'])
 
     def test_failed_readback_blocks_next_apply(self):

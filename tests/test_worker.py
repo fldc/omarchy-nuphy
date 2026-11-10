@@ -68,7 +68,7 @@ class WorkerIntegrationTests(unittest.TestCase):
             self.assertEqual(result['theme'], '#123456')
         self.assertEqual(self.log.read_text().splitlines(), ['list'])
 
-    def test_theme_event_updates_without_subprocess(self):
+    def test_theme_event_updates_without_cli_commands(self):
         self.theme.write_text('#abcdef')
         result = self.receive()
         self.assertEqual(result['theme'], '#abcdef')

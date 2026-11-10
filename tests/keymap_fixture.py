@@ -8,7 +8,7 @@ import sys
 
 def prepare(root):
     source = Path(__file__).parents[1]
-    for name in ['nuphy_worker.py', 'nuphy_backend.py', 'nuphy_keymap.py']:
+    for name in ['nuphy_worker.py', 'nuphy_backend.py', 'nuphy_keymap.py', 'nuphy_io.py']:
         shutil.copy(source / name, root / name)
     node = root / 'fake-device'
     node.touch()

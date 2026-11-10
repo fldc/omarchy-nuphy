@@ -87,6 +87,15 @@ Item {
     return true
   }
 
+  function workerStopped() {
+    actionBusy = false
+    pendingId = -1
+    snapshot = ({})
+    keymap = Object.assign({}, keymap, {known: false})
+    if (!lastError) lastError = "NuPhy worker stopped; restarting"
+    if (!restart.running) restart.start()
+  }
+
   Process {
     id: process
     command: root.workerCommand
@@ -107,14 +116,9 @@ Item {
       }
     }
     stderr: SplitParser { onRead: function(line) { root.lastError = line.slice(0, 600) } }
-    onExited: {
-      root.actionBusy = false
-      root.pendingId = -1
-      root.snapshot = ({})
-      root.keymap = Object.assign({}, root.keymap, {known: false})
-      if (!root.lastError) root.lastError = "NuPhy worker stopped; restarting"
-      restart.restart()
-    }
+    // FailedToStart changes running without emitting exited. Handle both paths.
+    onRunningChanged: if (!running) root.workerStopped()
+    onExited: root.workerStopped()
   }
   Timer { id: restart; interval: 5000; onTriggered: process.running = true }
 }

@@ -12,6 +12,8 @@ import subprocess
 import tempfile
 import time
 
+from nuphy_io import read_text, run_command
+
 MAIN = 'ray stair static breath flower wave ripple spout galaxy rotation ripple2 point grid time rain ribbon gaming identify windmill diagonal'.split()
 SIDE = 'time neon static breathe rhythm'.split()
 ZONES = ('main', 'side', 'decorative')
@@ -52,13 +54,8 @@ def validate(zone, values):
 
 def load_state(path):
     state = defaults()
-    if not path.exists():
-        return state
     try:
-        with path.open() as source:
-            text = source.read(MAX_JSON + 1)
-        if len(text) > MAX_JSON:
-            raise ValueError('State exceeds maximum size')
+        text = read_text(path, MAX_JSON)
         raw = json.loads(text)
         if not isinstance(raw, dict) or not isinstance(raw.get('zones'), dict):
             raise ValueError('Invalid state object')
@@ -76,7 +73,9 @@ def load_state(path):
             raise ValueError('Invalid retry deadline')
         state['retryAfter'] = min(max(0, retry), time.time() + RETRY_SECONDS)
         return state
-    except (ValueError, TypeError, OSError) as error:
+    except FileNotFoundError:
+        return state
+    except (ValueError, TypeError, OSError, subprocess.SubprocessError) as error:
         backup = path.with_name(f'state.corrupt-{time.time_ns()}.json')
         try:
             path.replace(backup)
@@ -90,8 +89,11 @@ def load_state(path):
 
 def save_state(path, state):
     encoded = json.dumps(state, sort_keys=True)
-    if path.exists() and path.read_text() == encoded:
-        return
+    try:
+        if read_text(path, MAX_JSON) == encoded:
+            return
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
     name = None
     try:
         with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.state-', delete=False) as target:
@@ -123,10 +125,9 @@ def state_lock(timeout=2):
 
 def theme_color():
     try:
-        with THEME.open() as source:
-            color = source.read(128).strip()
+        color = read_text(THEME, 128).strip()
         return color.lower() if re.fullmatch(r'#[0-9a-fA-F]{6}', color) else ''
-    except (OSError, UnicodeError):
+    except (OSError, ValueError, subprocess.SubprocessError):
         return ''
 
 
@@ -179,7 +180,7 @@ def device_identity(device):
 
 
 def discover_device():
-    result = subprocess.run(['nuphyctl', 'list'], capture_output=True, text=True, timeout=3)
+    result = run_command(['nuphyctl', 'list'], timeout=3)
     if result.returncode:
         raise RuntimeError((result.stderr or 'Unable to list NuPhy keyboards').strip()[:600])
     device = select_device(result.stdout)
@@ -215,7 +216,7 @@ def apply(state, zone, color, device, force=False):
         return
     if device_identity(device) != device['identity']:
         raise RuntimeError('Keyboard changed; retry after device discovery')
-    completed = subprocess.run(args, capture_output=True, text=True, timeout=12)
+    completed = run_command(args, timeout=12)
     if completed.returncode:
         raise RuntimeError((completed.stderr or completed.stdout or 'nuphyctl failed').strip()[:600])
     state['applied'][zone] = signature

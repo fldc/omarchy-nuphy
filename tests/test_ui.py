@@ -20,6 +20,12 @@ class UiTests(unittest.TestCase):
     def test_keymap_flow(self):
         self.run_scene("KeymapFlow", "NuPhy keymap flow passed")
 
+    def test_bounded_paste(self):
+        self.run_scene("PasteSmoke", "NuPhy paste smoke passed")
+
+    def test_worker_start_failure_recovery(self):
+        self.run_scene("RecoverySmoke", "NuPhy recovery smoke passed")
+
     def run_scene(self, scene, success):
         omarchy = Path(os.environ.get('OMARCHY_PATH', '/usr/share/omarchy'))
         shell = omarchy / 'shell'
@@ -36,6 +42,9 @@ class UiTests(unittest.TestCase):
             cli = binary / 'nuphyctl'
             if scene != 'KeymapFlow': cli.write_text('#!/bin/sh\n[ "$1" = "list" ] || exit 77\n')
             cli.chmod(0o700)
+            paste = binary / 'wl-paste'
+            paste.write_text('#!/bin/sh\nsleep 0.1\nprintf "#abc"\n')
+            paste.chmod(0o700)
             tests = Path(__file__).parent.resolve()
             (root / 'shell.qml').write_text('import Quickshell\nimport "' + tests.as_uri() + '" as Tests\nShellRoot { Tests.' + scene + ' {} }\n')
             process = subprocess.run(['quickshell', '--path', str(root), '--no-color'],

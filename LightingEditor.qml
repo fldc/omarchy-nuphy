@@ -201,7 +201,7 @@ Controls.ScrollView {
           onClicked: { colorSquare.forceActiveFocus(); root.toggleColorPicker() }
         }
       }
-      Ui.TextField {
+      BoundedTextField {
         id: hexInput
         objectName: "hexInput"
         Layout.fillWidth: true
