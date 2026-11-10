@@ -43,10 +43,14 @@ Install `nuphyctl` from the AUR using the
 omarchy pkg aur add nuphyctl-bin
 ```
 
-The documented `nuphyctl-bin` package version is **`0.6.2-1`**, built from
+The documented `nuphyctl-bin` package version is **`0.6.2-2`**, built from
 [`nuphyctl v0.6.2`](https://github.com/fldc/nuphyctl/releases/tag/v0.6.2).
 That release includes signed build provenance for both architectures' executables
-and archives; see the [upstream verification instructions](https://github.com/fldc/nuphyctl/blob/v0.6.2/docs/releases.md).
+and archives; see the [upstream verification instructions](https://github.com/fldc/nuphyctl/blob/c33e69f885360d318aa07b3acd570f38e9949bce/docs/releases.md).
+
+The package also installs architecture-specific third-party license notices under
+`/usr/share/licenses/nuphyctl-bin/THIRD-PARTY-NOTICES/`, including the bundled
+HIDAPI implementation and Rust standard-library attributions.
 
 The package installs a udev rule
 that grants the active local seat access to NuPhy hidraw devices. After installing
