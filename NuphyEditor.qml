@@ -8,30 +8,46 @@ ColumnLayout {
   id: root
   required property var service
   property bool keymapTab: false
+  property bool settingsTab: false
   readonly property real preferredWidth: Commons.Style.space(keymapTab ? 760 : 360)
   signal closeRequested()
   focus: true
   Keys.onEscapePressed: {
     if (keymapTab && keymapEditor.pickerOpen) keymapEditor.pickerOpen = false
-    else if (!keymapTab && lighting.pickerOpen) lighting.pickerOpen = false
+    else if (!keymapTab && !settingsTab && lighting.pickerOpen) lighting.pickerOpen = false
     else closeRequested()
   }
   spacing: Commons.Style.space(10)
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
   RowLayout {
     Layout.fillWidth: true
-    Ui.Button { Layout.fillWidth: true; text: strings.t("lightingTab"); bordered: !root.keymapTab; focusable: true; onClicked: root.keymapTab = false }
+    Ui.Button { Layout.fillWidth: true; text: strings.t("lightingTab"); bordered: !root.keymapTab && !root.settingsTab; focusable: true; onClicked: { root.keymapTab = false; root.settingsTab = false } }
     Ui.Button {
       Layout.fillWidth: true; text: strings.t("keymapTab"); bordered: root.keymapTab; focusable: true
       onClicked: {
+        root.settingsTab = false
         root.keymapTab = true
         if (root.service && !root.service.keymapCurrent) root.service.loadKeymap()
       }
     }
+    Ui.Button {
+      objectName: "settingsTab"
+      Layout.fillWidth: true; text: strings.t("settingsTab"); bordered: root.settingsTab; focusable: true
+      onClicked: {
+        root.keymapTab = false; root.settingsTab = true
+        if (root.service && !root.service.settingsCurrent) root.service.loadSettings(false, false)
+      }
+    }
+  }
+  SettingsEditor {
+    visible: root.settingsTab
+    Layout.fillWidth: true; Layout.fillHeight: true
+    service: root.service
+    onCloseRequested: root.closeRequested()
   }
   LightingEditor {
     id: lighting
-    visible: !root.keymapTab
+    visible: !root.keymapTab && !root.settingsTab
     Layout.fillWidth: true; Layout.fillHeight: true
     snapshot: root.service ? root.service.snapshot : ({})
     actionBusy: root.service ? root.service.actionBusy : false

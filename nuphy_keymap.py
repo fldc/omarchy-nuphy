@@ -24,7 +24,7 @@ def integer(value, maximum):
 
 
 def cli(args, device=None):
-    command = ['nuphyctl', 'keymap', *args, '--json']
+    command = [backend.CLI, 'keymap', *args, '--json']
     if device:
         if backend.device_identity(device) != device['identity']:
             raise RuntimeError('Keyboard changed; refresh keymap')

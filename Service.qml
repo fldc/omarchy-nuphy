@@ -7,6 +7,35 @@ Item {
   property var workerCommand: ["python3", "-u", Qt.resolvedUrl("nuphy_worker.py").toString().replace(/^file:\/\//, "")]
   property var snapshot: ({})
   property var keymap: ({})
+  property var settings: ({})
+  property var settingsDraft: ({})
+  property var settingsOriginal: ({})
+  property string settingsDraftIdentity: ""
+  readonly property bool settingsCurrent: !!settings.known && !!snapshot.connected && settings.identity === snapshot.deviceIdentity
+  readonly property bool settingsDirty: Object.keys(settingsDraft).length > 0
+  function discardSettings() { settingsDraft = ({}); settingsOriginal = ({}); settingsDraftIdentity = "" }
+  function stageSetting(key, value) {
+    if (!settingsCurrent || actionBusy) return
+    var next = Object.assign({}, settingsDraft)
+    var original = Object.assign({}, settingsOriginal)
+    if (value === settings.values[key]) { delete next[key]; delete original[key] }
+    else { if (!(key in original)) original[key] = settings.values[key]; next[key] = value }
+    settingsDraftIdentity = settings.identity
+    settingsDraft = next; settingsOriginal = original
+  }
+  function loadSettings(accessory, discard) {
+    var accepted = request("settings-load", null, {accessory: accessory === true})
+    if (accepted && discard) discardSettings()
+    return accepted
+  }
+  function applySettings() {
+    if (!settingsCurrent || !settingsDirty || settingsDraftIdentity !== settings.identity) return false
+    return request("settings-apply", null, {identity: settings.identity, changes: settingsDraft, original: settingsOriginal})
+  }
+  function receiveSettings(value, completed) {
+    settings = value
+    if (completed && pendingAction === "settings-apply" && value.known && !value.error && value.message) discardSettings()
+  }
   property var drafts: ({})
   property string pendingAction: ""
   readonly property bool keymapCurrent: !!keymap.known && !!snapshot.connected && keymap.identity === snapshot.deviceIdentity
@@ -70,7 +99,10 @@ Item {
     }
     reconcile()
   }
-  onSnapshotChanged: reconcile()
+  onSnapshotChanged: {
+    reconcile()
+    if (settingsDraftIdentity && settingsDraftIdentity !== snapshot.deviceIdentity) discardSettings()
+  }
   property bool actionBusy: false
   property int nextId: 0
   property int pendingId: -1
@@ -83,6 +115,7 @@ Item {
     pendingId = ++nextId
     actionBusy = true
     lastError = ""
+    if (action === "settings-load" || action === "settings-apply") settings = Object.assign({}, settings, {known: false, message: "", error: ""})
     process.write(JSON.stringify({id: pendingId, action: action, zone: zone, config: config}) + "\n")
     return true
   }
@@ -92,6 +125,7 @@ Item {
     pendingId = -1
     snapshot = ({})
     keymap = Object.assign({}, keymap, {known: false})
+    settings = Object.assign({}, settings, {known: false})
     if (!lastError) lastError = "NuPhy worker stopped; restarting"
     if (!restart.running) restart.start()
   }
@@ -106,6 +140,7 @@ Item {
         try {
           const value = JSON.parse(line)
           if (value.zones) root.snapshot = value
+          if (value.settings) root.receiveSettings(value.settings, value.requestId === root.pendingId && root.pendingId >= 0)
           if (value.keymap && value.requestId === root.pendingId) root.receiveKeymap(value.keymap)
           if (value.requestId === root.pendingId || value.protocolError) {
             root.actionBusy = false

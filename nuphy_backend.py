@@ -22,6 +22,7 @@ STATE = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state'))
 THEME = Path.home() / '.local/state/omarchy/current/theme/keyboard.rgb'
 RETRY_SECONDS = 30
 MAX_JSON = 65536
+CLI = os.environ.get('NUPHYCTL', 'nuphyctl')
 
 
 def defaults():
@@ -180,7 +181,7 @@ def device_identity(device):
 
 
 def discover_device():
-    result = run_command(['nuphyctl', 'list'], timeout=3)
+    result = run_command([CLI, 'list'], timeout=3)
     if result.returncode:
         raise RuntimeError((result.stderr or 'Unable to list NuPhy keyboards').strip()[:600])
     device = select_device(result.stdout)
@@ -193,7 +194,7 @@ def discover_device():
 
 
 def command(zone, config, color, device):
-    args = ['nuphyctl', 'rgb', 'set' if zone == 'main' else zone,
+    args = [CLI, 'rgb', 'set' if zone == 'main' else zone,
             '--effect', config['effect'], '--hex', color,
             '--brightness', str(config['brightness']), '--speed', str(config['speed']),
             '--path', device['path'], '--vid', str(device['vid']), '--pid', str(device['pid']),

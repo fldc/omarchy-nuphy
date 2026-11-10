@@ -8,7 +8,7 @@ import sys
 
 def prepare(root):
     source = Path(__file__).parents[1]
-    for name in ['nuphy_worker.py', 'nuphy_backend.py', 'nuphy_keymap.py', 'nuphy_io.py']:
+    for name in ['nuphy_worker.py', 'nuphy_backend.py', 'nuphy_keymap.py', 'nuphy_io.py', 'nuphy_settings.py']:
         shutil.copy(source / name, root / name)
     node = root / 'fake-device'
     node.touch()
@@ -19,6 +19,7 @@ def prepare(root):
         out.write('def discover_device():\n    device = ' + repr(device) + '\n    device["identity"] = device_identity(device)\n    return device\n')
     data = root / 'keys.json'
     data.write_text('[4,5,6,7]')
+    (root / 'settings.json').write_text(json.dumps(dict(auto_sleep=True, level1_minutes=6, level2_minutes=24, accessory='knob')))
     binary = root / 'bin'
     binary.mkdir(exist_ok=True)
     cli = binary / 'nuphyctl'
@@ -27,6 +28,20 @@ from pathlib import Path
 args=sys.argv[1:]
 root=Path(os.environ['NUPHY_FIXTURE'])
 with (root/'commands.jsonl').open('a') as log: log.write(json.dumps(args)+'\\n')
+if args[0]=='settings':
+    assert all(flag in args for flag in ['--path','--vid','--pid','--iface','--usage-page','--usage'])
+    path=root/'settings.json'
+    settings=json.loads(path.read_text())
+    if args[1]=='set':
+        for key in settings:
+            flag='--'+key.replace('_','-')
+            if flag in args:
+                raw=args[args.index(flag)+1]
+                settings[key]=(raw=='on') if key=='auto_sleep' else (raw if key=='accessory' else int(raw))
+        path.write_text(json.dumps(settings))
+        print(json.dumps({'verified':True})); sys.exit(0)
+    if '--accessory' not in args: del settings['accessory']
+    print(json.dumps(settings)); sys.exit(0)
 assert args[0]=='keymap', args
 command=args[1]
 if command!='keycodes':
@@ -54,5 +69,5 @@ else: raise AssertionError(command)
 print(json.dumps(result))
 ''')
     cli.chmod(0o700)
-    return dict(os.environ, NUPHY_FIXTURE=str(root), NUPHY_TEST_WORKER=str(root / 'nuphy_worker.py'),
+    return dict(os.environ, NUPHYCTL='nuphyctl', NUPHY_FIXTURE=str(root), NUPHY_TEST_WORKER=str(root / 'nuphy_worker.py'),
                 PATH=str(binary) + os.pathsep + os.environ['PATH'], XDG_STATE_HOME=str(root / 'state'))

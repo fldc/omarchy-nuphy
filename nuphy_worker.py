@@ -12,6 +12,7 @@ import time
 
 import nuphy_backend as backend
 from nuphy_keymap import Keymap
+from nuphy_settings import Settings
 
 FALLBACK_SECONDS = 60
 
@@ -74,6 +75,7 @@ def serve():
             raise RuntimeError('A NuPhy worker is already running')
         worker = backend.Worker()
         keymap = Keymap()
+        settings = Settings()
         worker.discover()
         selector = selectors.DefaultSelector()
         selector.register(sys.stdin, selectors.EVENT_READ, 'input')
@@ -95,8 +97,12 @@ def serve():
                 if request.get('action', '').startswith('keymap-'):
                     mapping = keymap.execute(request['action'], worker.device, request.get('config'))
                     result = {**worker.execute({'action': 'status'}), 'keymap': mapping}
+                elif request.get('action', '').startswith('settings-'):
+                    settings.execute(request['action'], worker.device, request.get('config'))
+                    result = worker.execute({'action': 'status'})
                 else:
                     result = worker.execute(request)
+                result['settings'] = settings.view(worker.device)
             except (OSError, RuntimeError) as error:
                 result = {'error': str(error)[:600]}
             result['requestId'] = request.get('id')
@@ -130,7 +136,7 @@ def serve():
                             line, buffer = buffer.split(b'\n', 1)
                             try:
                                 request = json.loads(line)
-                                if not isinstance(request, dict) or request.get('action') not in ('apply', 'sync', 'status', 'keymap-load', 'keymap-apply'):
+                                if not isinstance(request, dict) or request.get('action') not in ('apply', 'sync', 'status', 'keymap-load', 'keymap-apply', 'settings-load', 'settings-apply'):
                                     raise ValueError('Invalid worker request')
                                 if request['action'] != 'status':
                                     # Outside state lock; fresh verification for explicit writes.

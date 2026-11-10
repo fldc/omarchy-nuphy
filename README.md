@@ -20,6 +20,7 @@ cannot identify an automatic target, it falls back to “NuPhy keyboard”.
 - Device-specific sync cache, invalidated on reconnect and worker restart.
 - Lazy popup creation, per-zone editing drafts, and keyboard-adjustable sliders.
 - Atomic preferences with safe recovery, bounded file reads and backups of damaged state.
+- Auto Sleep, two sleep timers and opt-in swappable knob/button settings.
 - Visual Air75 V3 keymap editor, searchable assignments, and shared editing drafts.
 - Scrollable matrix view for other layouts, with a link to request a physical diagram.
 - NuPhyIO layer numbering: FN0–FN3 for Mac and FN4–FN7 for Windows on Air75 V3.
@@ -244,6 +245,45 @@ Keymap editing requires CLI support for `info`, `dump`, `keycodes`, and `apply`
 with `--json`, plus `dump --defaults` and `dump --raw-out`. An older CLI reports
 its command error in the editor; lighting remains available. No automatic profile
 restore, whole-mode reset, or macro editor is included.
+
+### Keyboard settings
+
+Open **Settings** to read Auto Sleep and both sleep timers from a mechanical
+NuPhy keyboard using the NuPhy IO protocol. **Level 1 Sleep** turns off lights;
+**Level 2 Sleep** turns off lights and communication and follows Level 1. Both
+ranges are 5–127 minutes. Use the − / + controls to edit; disabling Auto Sleep
+preserves the timers. Changes remain pending across popup closes and monitors.
+**Apply settings** sends only edited fields and verifies the keyboard's readback.
+**Discard changes** restores the displayed readings. **Refresh** rereads hardware
+and discards pending settings edits. A disconnect or different device clears
+settings drafts; stale readings cannot authorize a write.
+
+Accessory reads are opt-in: choose **Read accessory switch** only for a board
+with a swappable knob/button. A successful read enables **Accessory Switch** with
+**Knob** and **Button** choices. An unsupported accessory read leaves sleep
+controls available. Opening Settings never probes the accessory automatically.
+
+The worker checks device identity and all HID interface selectors, rereads
+settings before applying, and stops if edited fields changed externally. After
+any write attempt it reads the keyboard again. Failed or mismatched readback
+reports an error; writes never retry automatically. A failed read requires
+Refresh before another Apply. Another application can still write between
+preflight and Apply because the CLI has no conditional-write API.
+
+These controls require a `nuphyctl` build supporting `settings get/set --json`;
+the currently installed release may not include them. An older backend reports
+a clear unavailable message. HE models use a different configuration block and
+are unsupported. There is no Reset Keyboard control. NuPhy IO's Keyboard Layout
+selection only changes its web app's virtual key labels; it is not exposed as a
+firmware setting.
+
+For development, the worker accepts an explicit `NUPHYCTL` executable override in
+the environment it inherits when launched, for example
+`NUPHYCTL=/path/to/nuphyctl/target/debug/nuphyctl`. It applies consistently
+to discovery, lighting, keymap and settings commands. The default remains
+`nuphyctl` on PATH; the plugin never silently selects a local build. Start the
+shell with that environment to use the development backend. The nuphyctl checkout
+is a separate project and is not built or modified by this plugin.
 
 ## Development
 

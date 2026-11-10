@@ -26,7 +26,7 @@ class WorkerIntegrationTests(unittest.TestCase):
                        'if sys.argv[1:] != ["list"]: sys.exit(77)\n')
         cli.chmod(0o700)
         self.log = self.root / 'cli.log'
-        self.env = dict(os.environ, HOME=str(self.root), XDG_STATE_HOME=str(self.root / 'state'),
+        self.env = dict(os.environ, NUPHYCTL='nuphyctl', HOME=str(self.root), XDG_STATE_HOME=str(self.root / 'state'),
                         PATH=str(binary) + os.pathsep + os.environ['PATH'], NUPHY_TEST_LOG=str(self.log))
         self.script = Path(__file__).parents[1] / 'nuphy_worker.py'
         self.process = subprocess.Popen([sys.executable, '-u', str(self.script)], env=self.env,
